@@ -19,7 +19,7 @@ export async function GET() {
       { value: 'metric',   label: 'Metric (°C, km/h)' },
       { value: 'imperial', label: 'Imperial (°F, mph)' },
     ],
-    autoRefreshMs: 300_000,
+    autoRefreshMs: 180_000,
     forecastDays: 7,
     version: '2.0.0',
   });

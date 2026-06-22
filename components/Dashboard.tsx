@@ -1,6 +1,6 @@
 'use client';
 
-import type { WeatherData, FarmState, UsageData, DailyForecast, HourlyForecast } from '@/lib/types';
+import type { WeatherData, FarmState, DailyForecast, HourlyForecast } from '@/lib/types';
 import {
   wmoIcon, wmoText, isDaytime, dayName, localHour,
   fmtTemp, fmtWind, fmtPrecip, degreesToCardinal,
@@ -10,7 +10,6 @@ import {
 interface Props {
   data: WeatherData;
   farmState: FarmState;
-  usageData: UsageData | null;
   isRefreshing?: boolean;
   lastUpdated?: Date | null;
 }
@@ -37,7 +36,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Dashboard({ data, farmState, usageData, isRefreshing = false }: Props) {
+export default function Dashboard({ data, farmState, isRefreshing = false }: Props) {
   const cur    = data.current  || {};
   const loc    = data.location || {};
   const daily  = (data.daily   || []) as DailyForecast[];
@@ -72,20 +71,6 @@ export default function Dashboard({ data, farmState, usageData, isRefreshing = f
   }
   const next24 = hourly.slice(startIdx, startIdx + 24);
 
-  // Usage
-  const plan    = usageData?.plan || 'free';
-  const period  = usageData?.period  || {};
-  const limits  = usageData?.limits  || {};
-  const rem     = usageData?.remaining || {};
-  const used    = period.requestCount   || 0;
-  const limit   = limits.requests       || 1000;
-  const left    = rem.requests          != null ? rem.requests   : (limit - used);
-  const aiUsed  = period.aiRequestCount || 0;
-  const aiLimit = limits.aiRequests     || 200;
-  const aiLeft  = rem.aiRequests        != null ? rem.aiRequests : (aiLimit - aiUsed);
-  const reqPct  = limit ? Math.round((used / limit) * 100) : 0;
-  const aiPct   = aiLimit ? Math.round((aiUsed / aiLimit) * 100) : 0;
-  const barClass = (pct: number) => pct >= 90 ? 'var(--risk-crit)' : pct >= 70 ? 'var(--amber)' : 'var(--green)';
 
   return (
     <div style={{ position: 'relative' }}>
@@ -285,48 +270,6 @@ export default function Dashboard({ data, farmState, usageData, isRefreshing = f
         })}
       </div>
 
-      {/* ── Usage Widget ────────────────────────────────────────────── */}
-      {usageData && (
-        <div className="card mb-4 p-5">
-          <div className="flex items-center justify-between mb-3.5 flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 text-xs uppercase tracking-widest font-bold" style={{ color: 'var(--green)' }}>
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M3 3h18v18H3z" /><path d="M3 9h18M3 15h18M9 3v18" />
-              </svg>
-              API Usage &amp; Quota
-            </div>
-            <span
-              className="text-xs px-2.5 py-0.5 rounded-full"
-              style={{ background: 'rgba(74,222,128,.15)', color: 'var(--green)', border: '1px solid rgba(74,222,128,.3)' }}
-            >
-              {plan.charAt(0).toUpperCase() + plan.slice(1)}
-            </span>
-          </div>
-          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(120px,1fr))' }}>
-            {[
-              { lbl: 'Requests Used', val: used.toLocaleString(), pct: reqPct },
-              { lbl: 'Requests Left', val: left.toLocaleString(), pct: null },
-              { lbl: 'AI Requests Used', val: aiUsed.toLocaleString(), pct: aiPct },
-              { lbl: 'AI Requests Left', val: aiLeft.toLocaleString(), pct: null },
-            ].map(s => (
-              <div key={s.lbl}>
-                <div className="text-[0.7rem] uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>{s.lbl}</div>
-                <div className="text-lg font-bold" style={{ color: 'var(--text)' }}>{s.val}</div>
-                {s.pct != null && (
-                  <div className="h-1 rounded-full mt-1.5" style={{ background: 'var(--border)' }}>
-                    <div className="h-full rounded-full transition-all duration-500" style={{ width: s.pct + '%', background: barClass(s.pct) }} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          {period.end && (
-            <div className="text-xs mt-2.5" style={{ color: 'var(--muted)' }}>
-              Resets {new Date(period.end).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-            </div>
-          )}
-        </div>
-      )}
 
     </div>
   );
