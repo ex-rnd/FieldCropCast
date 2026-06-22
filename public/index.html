@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FieldCast — Farmer Weather Risk Dashboard</title>
+  <style>
+/* ── Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  /* Dark mode */
+  --bg:          #0c1a0e;
+  --bg2:         #111f14;
+  --surface:     rgba(255,255,255,0.06);
+  --surface-hi:  rgba(255,255,255,0.10);
+  --border:      rgba(255,255,255,0.10);
+  --text:        #e8f5e9;
+  --text2:       #a5c8a8;
+  --muted:       #6a8f6d;
+
+  --green:       #4ade80;
+  --green-dim:   #16a34a;
+  --amber:       #fbbf24;
+  --amber-dim:   #d97706;
+  --sky:         #38bdf8;
+  --sky-dim:     #0284c7;
+  --lime:        #a3e635;
+
+  --risk-low:    #4ade80;
+  --risk-mod:    #fbbf24;
+  --risk-high:   #f97316;
+  --risk-crit:   #ef4444;
+
+  --radius:      14px;
+  --radius-sm:   8px;
+  --blur:        blur(18px);
+  --shadow:      0 4px 24px rgba(0,0,0,.4);
+}
+
+[data-theme="light"] {
+  --bg:          #eef4ec;
+  --bg2:         #e4eddf;
+  --surface:     rgba(255,255,255,0.75);
+  --surface-hi:  rgba(255,255,255,0.95);
+  --border:      rgba(0,0,0,0.08);
+  --text:        #132b14;
+  --text2:       #2d5c31;
+  --muted:       #5a7d5e;
+
+  --green:       #16a34a;
+  --green-dim:   #4ade80;
+  --amber:       #d97706;
+  --amber-dim:   #fbbf24;
+  --sky:         #0284c7;
+  --sky-dim:     #38bdf8;
+  --lime:        #65a30d;
+
+  --risk-low:    #15803d;
+  --risk-mod:    #b45309;
+  --risk-high:   #c2410c;
+  --risk-crit:   #dc2626;
+
+  --shadow:      0 4px 24px rgba(0,0,0,.10);
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background .3s, color .3s;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+#app { max-width: 1080px; margin: 0 auto; padding: 24px 16px 60px; }
+
+/* ── Glass card ─────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: var(--shadow);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px; flex-wrap: wrap;
+}
+.logo {
+  font-size: 1.35rem; font-weight: 800; letter-spacing: -0.5px;
+  color: var(--green); white-space: nowrap;
+}
+.logo-sub { font-size: .75rem; color: var(--muted); font-weight: 400; display: block; margin-top: -2px; }
+
+.header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.icon-btn {
+  width: 36px; height: 36px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 50%; color: var(--text2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s, color .2s; font-size: 1rem;
+}
+.icon-btn:hover { background: var(--surface-hi); color: var(--green); }
+
+/* ── Setup form ─────────────────────────────────────────────────────── */
+#setup-card { padding: 24px; margin-bottom: 20px; }
+
+.setup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.setup-title {
+  font-size: 1rem; font-weight: 700; color: var(--green);
+  display: flex; align-items: center; gap: 8px;
+}
+.setup-toggle {
+  font-size: .8rem; color: var(--muted); cursor: pointer;
+  background: none; border: none; color: var(--muted);
+  text-decoration: underline; cursor: pointer;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+.form-input, .form-select {
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: .9rem;
+  outline: none;
+  transition: border-color .2s;
+  width: 100%;
+}
+.form-input:focus, .form-select:focus { border-color: var(--green); }
+.form-input::placeholder { color: var(--muted); }
+.form-select option { background: var(--bg2); }
+
+.analyze-btn {
+  grid-column: 1 / -1;
+  padding: 12px 24px;
+  background: var(--green);
+  border: none; border-radius: var(--radius-sm);
+  color: #0c1a0e; font-weight: 800; font-size: .95rem;
+  cursor: pointer; letter-spacing: .3px;
+  transition: opacity .2s, transform .1s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+[data-theme="light"] .analyze-btn { color: #fff; background: var(--green); }
+.analyze-btn:hover { opacity: .9; }
+.analyze-btn:active { transform: scale(.98); }
+.analyze-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Farm badge (shown when data is loaded) ─────────────────────────── */
+#farm-badge {
+  display: none;
+  align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  font-size: .85rem; color: var(--text2);
+  margin-bottom: 16px;
+}
+#farm-badge .badge-name { font-weight: 700; color: var(--green); }
+#farm-badge .badge-crop { color: var(--amber); }
+#farm-badge .badge-coords { color: var(--muted); font-size: .75rem; }
+
+/* ── Error banner ───────────────────────────────────────────────────── */
+#error-banner {
+  display: none; padding: 12px 18px; margin-bottom: 16px;
+  background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
+  border-radius: var(--radius-sm); color: #fca5a5; font-size: .9rem;
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────── */
+#hero {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 16px; padding: 28px 28px; margin-bottom: 16px; align-items: center;
+}
+@media (max-width: 500px) { #hero { grid-template-columns: 1fr; padding: 22px 18px; } }
+
+.hero-county { font-size: .8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+.hero-temp {
+  font-size: clamp(4rem, 12vw, 6.5rem);
+  font-weight: 200; line-height: 1; letter-spacing: -3px;
+  color: var(--text);
+}
+.hero-condition { font-size: 1.1rem; color: var(--sky); margin-top: 6px; }
+.hero-feels { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+.hero-time  { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+.hero-icon  { font-size: clamp(4rem, 12vw, 7rem); text-align: right; line-height: 1; }
+
+/* ── Section title ──────────────────────────────────────────────────── */
+.section-title {
+  font-size: .75rem; text-transform: uppercase;
+  letter-spacing: 1.5px; color: var(--muted); margin-bottom: 10px; padding: 0 2px;
+}
+
+/* ── Risk cards ─────────────────────────────────────────────────────── */
+#risks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+
+.risk-card { padding: 20px 18px; }
+.risk-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.risk-icon { font-size: 1.5rem; }
+.risk-label { font-size: .8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.risk-level {
+  font-size: 1.4rem; font-weight: 800; letter-spacing: -.5px;
+}
+.risk-level.low      { color: var(--risk-low); }
+.risk-level.moderate { color: var(--risk-mod); }
+.risk-level.high     { color: var(--risk-high); }
+.risk-level.critical { color: var(--risk-crit); }
+
+.risk-bar-track {
+  height: 5px; background: var(--border); border-radius: 3px; margin: 10px 0 8px;
+}
+.risk-bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+.risk-detail { font-size: .8rem; color: var(--muted); line-height: 1.5; }
+
+/* ── Actions card ───────────────────────────────────────────────────── */
+#actions-card { padding: 22px 24px; margin-bottom: 16px; }
+.actions-title { font-size: .8rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--amber); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+.action-list { display: flex; flex-direction: column; gap: 8px; }
+.action-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid transparent;
+  font-size: .88rem; line-height: 1.5; color: var(--text2);
+}
+.action-item.urgent { border-left-color: var(--risk-crit); }
+.action-item.warning { border-left-color: var(--risk-high); }
+.action-item.caution { border-left-color: var(--risk-mod); }
+.action-item.good    { border-left-color: var(--risk-low); }
+.action-bullet { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+/* ── AI Summary ─────────────────────────────────────────────────────── */
+#ai-card { padding: 20px 24px; margin-bottom: 16px; }
+.ai-label {
+  font-size: .75rem; text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--green); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+#ai-text { font-size: .9rem; line-height: 1.8; color: var(--text2); }
+
+/* ── Metrics ────────────────────────────────────────────────────────── */
+#metrics {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px; margin-bottom: 16px;
+}
+.metric-card { padding: 16px 12px; text-align: center; }
+.metric-icon { font-size: 1.5rem; margin-bottom: 5px; }
+.metric-val  { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+.metric-lbl  { font-size: .7rem; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-top: 3px; }
+
+/* ── Forecast ───────────────────────────────────────────────────────── */
+#forecast-strip {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+  margin-bottom: 16px;
+}
+@media (max-width: 680px) { #forecast-strip { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 400px) { #forecast-strip { grid-template-columns: repeat(3, 1fr); } }
+
+.day-card { padding: 12px 6px; text-align: center; transition: background .2s, transform .15s; }
+.day-card:hover { background: var(--surface-hi); transform: translateY(-2px); }
+.day-date { font-size: .7rem; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+.day-icon { font-size: 1.7rem; margin: 4px 0; }
+.day-hi   { font-size: .9rem; font-weight: 700; }
+.day-lo   { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+.day-rain { font-size: .68rem; color: var(--sky); margin-top: 4px; }
+
+/* ── Hourly ─────────────────────────────────────────────────────────── */
+#hourly-strip {
+  display: flex; gap: 8px;
+  overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+#hourly-strip::-webkit-scrollbar { height: 4px; }
+#hourly-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.hour-card { flex: 0 0 66px; padding: 12px 6px; text-align: center; border-radius: 12px; }
+.hour-card.now { background: rgba(74,222,128,.12); border: 1px solid rgba(74,222,128,.25); }
+[data-theme="light"] .hour-card.now { background: rgba(22,163,74,.10); border-color: rgba(22,163,74,.25); }
+.hour-time { font-size: .68rem; color: var(--muted); margin-bottom: 5px; }
+.hour-icon { font-size: 1.3rem; margin-bottom: 3px; }
+.hour-temp { font-size: .85rem; font-weight: 700; }
+.hour-rain { font-size: .65rem; color: var(--sky); margin-top: 2px; }
+
+/* ── Usage widget ───────────────────────────────────────────────────── */
+#usage-card { padding: 20px 24px; margin-bottom: 16px; }
+.usage-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+.usage-plan {
+  font-size: .75rem; text-transform: uppercase; letter-spacing: 1px;
+  padding: 3px 10px; border-radius: 50px;
+  background: rgba(74,222,128,.15); color: var(--green); border: 1px solid rgba(74,222,128,.3);
+}
+[data-theme="light"] .usage-plan { background: rgba(22,163,74,.12); }
+.usage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (min-width: 600px) { .usage-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.usage-stat { }
+.usage-stat-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 4px; }
+.usage-stat-value { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.usage-bar-track { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+.usage-bar-fill { height: 100%; border-radius: 2px; background: var(--green); transition: width .6s ease; }
+.usage-bar-fill.warn { background: var(--amber); }
+.usage-bar-fill.danger { background: var(--risk-crit); }
+.usage-reset { font-size: .75rem; color: var(--muted); margin-top: 10px; }
+
+/* ── Empty state ────────────────────────────────────────────────────── */
+#empty-state {
+  text-align: center; padding: 60px 20px; color: var(--muted);
+}
+#empty-state .empty-icon { font-size: 3.5rem; margin-bottom: 12px; }
+#empty-state p { font-size: .95rem; line-height: 1.7; }
+
+/* ── Loading overlay ────────────────────────────────────────────────── */
+#loading {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--bg); gap: 14px;
+  transition: opacity .3s;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border); border-top-color: var(--green);
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-msg { color: var(--muted); font-size: .9rem; }
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 32px; }
+footer a { color: var(--green); text-decoration: none; }
+
+/* ── Hidden ─────────────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div id="loading-msg">Starting up…</div>
+</div>
+
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div>
+      <div class="logo">🌾 FieldCast</div>
+      <span class="logo-sub">Farmer Weather Risk Dashboard</span>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="theme-btn" title="Toggle light/dark mode">🌙</button>
+    </div>
+  </header>
+
+  <!-- Error banner -->
+  <div id="error-banner"></div>
+
+  <!-- Farm Setup Form -->
+  <div class="card" id="setup-card">
+    <div class="setup-header">
+      <div class="setup-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Farm Setup
+      </div>
+      <button class="setup-toggle hidden" id="collapse-btn">Collapse ▲</button>
+    </div>
+    <div id="setup-fields">
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label" for="f-name">Farm Name</label>
+          <input class="form-input" id="f-name" placeholder="e.g. Kapkimolwa Farm" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-county">County / Region</label>
+          <input class="form-input" id="f-county" placeholder="e.g. Bomet" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-lat">Latitude</label>
+          <input class="form-input" id="f-lat" type="number" step="any" placeholder="-0.7893" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-lon">Longitude</label>
+          <input class="form-input" id="f-lon" type="number" step="any" placeholder="35.7890" />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-crop">Primary Crop</label>
+          <select class="form-select" id="f-crop">
+            <option value="general">General / Mixed</option>
+            <option value="maize">Maize</option>
+            <option value="tea">Tea</option>
+            <option value="coffee">Coffee</option>
+            <option value="wheat">Wheat</option>
+            <option value="rice">Rice</option>
+            <option value="beans">Beans</option>
+            <option value="tomatoes">Tomatoes</option>
+            <option value="potatoes">Potatoes</option>
+            <option value="sugarcane">Sugarcane</option>
+            <option value="flowers">Cut Flowers</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-units">Units</label>
+          <select class="form-select" id="f-units">
+            <option value="metric">Metric (°C, km/h)</option>
+            <option value="imperial">Imperial (°F, mph)</option>
+          </select>
+        </div>
+        <button class="analyze-btn" id="analyze-btn">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Analyze Farm Conditions
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Farm badge (shown when data is loaded) -->
+  <div id="farm-badge">
+    <span>🌾</span>
+    <span class="badge-name" id="badge-name">—</span>
+    <span>·</span>
+    <span class="badge-crop" id="badge-crop">—</span>
+    <span>·</span>
+    <span class="badge-coords" id="badge-coords">—</span>
+  </div>
+
+  <!-- Empty state -->
+  <div id="empty-state">
+    <div class="empty-icon">🌦</div>
+    <p>Enter your farm details above<br>and click <strong>Analyze</strong> to see weather risks.</p>
+  </div>
+
+  <!-- Dashboard (hidden until data loads) -->
+  <div id="dashboard" class="hidden">
+
+    <!-- Hero -->
+    <div class="card" id="hero">
+      <div>
+        <div class="hero-county" id="hero-county">—</div>
+        <div class="hero-temp" id="hero-temp">—</div>
+        <div class="hero-condition" id="hero-condition">—</div>
+        <div class="hero-feels" id="hero-feels"></div>
+        <div class="hero-time" id="hero-time"></div>
+      </div>
+      <div class="hero-icon" id="hero-icon">🌤</div>
+    </div>
+
+    <!-- Risk cards -->
+    <div class="section-title">⚠ Risk Assessment — Next 7 Days</div>
+    <div id="risks">
+      <div class="card risk-card" id="risk-rain">
+        <div class="risk-header">
+          <span class="risk-icon">🌧</span>
+          <span class="risk-label">Rain Risk</span>
+        </div>
+        <div class="risk-level" id="rr-level">—</div>
+        <div class="risk-bar-track"><div class="risk-bar-fill" id="rr-bar" style="width:0%"></div></div>
+        <div class="risk-detail" id="rr-detail">—</div>
+      </div>
+      <div class="card risk-card" id="risk-wind">
+        <div class="risk-header">
+          <span class="risk-icon">💨</span>
+          <span class="risk-label">Wind Risk</span>
+        </div>
+        <div class="risk-level" id="rw-level">—</div>
+        <div class="risk-bar-track"><div class="risk-bar-fill" id="rw-bar" style="width:0%"></div></div>
+        <div class="risk-detail" id="rw-detail">—</div>
+      </div>
+      <div class="card risk-card" id="risk-temp">
+        <div class="risk-header">
+          <span class="risk-icon">🌡</span>
+          <span class="risk-label">Heat / Frost Risk</span>
+        </div>
+        <div class="risk-level" id="rt-level">—</div>
+        <div class="risk-bar-track"><div class="risk-bar-fill" id="rt-bar" style="width:0%"></div></div>
+        <div class="risk-detail" id="rt-detail">—</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card" id="actions-card">
+      <div class="actions-title">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
+        Field Recommendations
+      </div>
+      <div class="action-list" id="action-list">
+        <div class="action-item"><span class="action-bullet">⏳</span> Loading recommendations…</div>
+      </div>
+    </div>
+
+    <!-- AI Summary -->
+    <div class="card" id="ai-card">
+      <div class="ai-label">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        AI-Generated Summary
+      </div>
+      <div id="ai-text">—</div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="section-title">Current Conditions</div>
+    <div id="metrics">
+      <div class="card metric-card"><div class="metric-icon">💧</div><div class="metric-val" id="m-humidity">—</div><div class="metric-lbl">Humidity</div></div>
+      <div class="card metric-card"><div class="metric-icon">💨</div><div class="metric-val" id="m-wind">—</div><div class="metric-lbl">Wind</div></div>
+      <div class="card metric-card"><div class="metric-icon">🌡</div><div class="metric-val" id="m-pressure">—</div><div class="metric-lbl">Pressure</div></div>
+      <div class="card metric-card"><div class="metric-icon">☀️</div><div class="metric-val" id="m-uv">—</div><div class="metric-lbl">UV Index</div></div>
+      <div class="card metric-card"><div class="metric-icon">👁</div><div class="metric-val" id="m-vis">—</div><div class="metric-lbl">Visibility</div></div>
+      <div class="card metric-card"><div class="metric-icon">🌧</div><div class="metric-val" id="m-precip">—</div><div class="metric-lbl">Precipitation</div></div>
+    </div>
+
+    <!-- 7-day forecast -->
+    <div class="section-title">7-Day Forecast</div>
+    <div id="forecast-strip"></div>
+
+    <!-- Hourly -->
+    <div class="section-title">Next 24 Hours</div>
+    <div id="hourly-strip"></div>
+
+    <!-- Usage widget -->
+    <div class="card" id="usage-card">
+      <div class="usage-top">
+        <div class="ai-label" style="margin-bottom:0">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          API Usage &amp; Quota
+        </div>
+        <span class="usage-plan" id="usage-plan">Free</span>
+      </div>
+      <div class="usage-grid" id="usage-grid">
+        <div class="usage-stat">
+          <div class="usage-stat-label">Requests Used</div>
+          <div class="usage-stat-value" id="u-used">—</div>
+          <div class="usage-bar-track"><div class="usage-bar-fill" id="u-bar-req" style="width:0%"></div></div>
+        </div>
+        <div class="usage-stat">
+          <div class="usage-stat-label">Requests Left</div>
+          <div class="usage-stat-value" id="u-left">—</div>
+        </div>
+        <div class="usage-stat">
+          <div class="usage-stat-label">AI Requests Used</div>
+          <div class="usage-stat-value" id="u-ai-used">—</div>
+          <div class="usage-bar-track"><div class="usage-bar-fill" id="u-bar-ai" style="width:0%"></div></div>
+        </div>
+        <div class="usage-stat">
+          <div class="usage-stat-label">AI Requests Left</div>
+          <div class="usage-stat-value" id="u-ai-left">—</div>
+        </div>
+      </div>
+      <div class="usage-reset" id="u-reset"></div>
+    </div>
+
+  </div><!-- /dashboard -->
+
+  <footer>
+    Powered by <a href="https://weather-ai.co" target="_blank" rel="noopener">WeatherAI API</a> ·
+    Data refreshes on each analysis run
+  </footer>
+</div><!-- /app -->
+
+<script>
+/* State */
+let farmState = { name:'', county:'', lat:null, lon:null, crop:'general', units:'metric' };
+let weatherData = null;
+
+/* Theme */
+const html = document.documentElement;
+const themeBtn = document.getElementById('theme-btn');
+const savedTheme = localStorage.getItem('fc-theme') ||
+  (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+setTheme(savedTheme, false);
+
+function setTheme(t, save) {
+  html.setAttribute('data-theme', t);
+  themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
+  if (save !== false) localStorage.setItem('fc-theme', t);
+}
+themeBtn.addEventListener('click', () => {
+  setTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+/* Helpers */
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function conditionIcon(text, isDay) {
+  text = (text || '').toLowerCase();
+  if (isDay === undefined) isDay = 1;
+  if (text.includes('thunder') || text.includes('storm')) return '⛈';
+  if (text.includes('drizzle') || text.includes('mist'))  return '🌦';
+  if (text.includes('heavy rain') || text.includes('torrential')) return '🌧';
+  if (text.includes('rain') || text.includes('shower'))   return isDay ? '🌦' : '🌧';
+  if (text.includes('snow') || text.includes('blizzard')) return '❄️';
+  if (text.includes('sleet') || text.includes('ice'))     return '🌨';
+  if (text.includes('fog') || text.includes('haze'))      return '🌫';
+  if (text.includes('overcast'))                         return '☁️';
+  if (text.includes('cloudy') || text.includes('cloud')) return isDay ? '⛅' : '☁️';
+  if (text.includes('sunny') || text.includes('clear'))  return isDay ? '☀️' : '🌙';
+  if (text.includes('partly'))                           return isDay ? '🌤' : '🌙';
+  if (text.includes('wind'))                             return '🌬';
+  return isDay ? '🌤' : '🌙';
+}
+
+function fmtTemp(c) {
+  return farmState.units === 'imperial'
+    ? Math.round(c * 9/5 + 32) + '°F'
+    : Math.round(c) + '°C';
+}
+function fmtWind(kph) {
+  return farmState.units === 'imperial'
+    ? Math.round(kph * 0.621) + ' mph'
+    : Math.round(kph) + ' km/h';
+}
+function fmtVis(km) {
+  return farmState.units === 'imperial'
+    ? (km * 0.621).toFixed(1) + ' mi'
+    : km + ' km';
+}
+function fmtPrecip(mm) {
+  return farmState.units === 'imperial'
+    ? (mm * 0.0394).toFixed(2) + '"'
+    : mm + ' mm';
+}
+function localHour(t) {
+  const d = new Date(t.includes('T') ? t : t.replace(' ','T'));
+  return d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:true });
+}
+function dayName(dateStr) {
+  return DAY_NAMES[new Date(dateStr + 'T12:00:00').getDay()];
+}
+
+/* Risk engine */
+const CROP_THRESHOLDS = {
+  tea:       { heatC:30, frostC:5,  windHigh:30, windCrit:55, rainHighMm:15, rainCritMm:30 },
+  coffee:    { heatC:32, frostC:4,  windHigh:25, windCrit:50, rainHighMm:20, rainCritMm:40 },
+  maize:     { heatC:35, frostC:2,  windHigh:35, windCrit:60, rainHighMm:25, rainCritMm:50 },
+  wheat:     { heatC:30, frostC:2,  windHigh:30, windCrit:55, rainHighMm:20, rainCritMm:35 },
+  rice:      { heatC:40, frostC:8,  windHigh:30, windCrit:50, rainHighMm:30, rainCritMm:60 },
+  beans:     { heatC:32, frostC:3,  windHigh:25, windCrit:45, rainHighMm:20, rainCritMm:35 },
+  tomatoes:  { heatC:32, frostC:5,  windHigh:25, windCrit:45, rainHighMm:15, rainCritMm:25 },
+  potatoes:  { heatC:28, frostC:2,  windHigh:30, windCrit:55, rainHighMm:20, rainCritMm:35 },
+  sugarcane: { heatC:38, frostC:5,  windHigh:40, windCrit:65, rainHighMm:30, rainCritMm:55 },
+  flowers:   { heatC:28, frostC:4,  windHigh:20, windCrit:40, rainHighMm:10, rainCritMm:20 },
+  general:   { heatC:35, frostC:3,  windHigh:35, windCrit:60, rainHighMm:20, rainCritMm:40 },
+};
+
+function riskLevel(score) {
+  if (score >= 85) return 'critical';
+  if (score >= 55) return 'high';
+  if (score >= 25) return 'moderate';
+  return 'low';
+}
+
+function computeRisks(days) {
+  const thr = CROP_THRESHOLDS[farmState.crop] || CROP_THRESHOLDS.general;
+
+  const maxRainMm     = Math.max(...days.map(d => d.day && d.day.totalprecip_mm != null ? d.day.totalprecip_mm : 0));
+  const maxRainChance = Math.max(...days.map(d => d.day && d.day.daily_chance_of_rain != null ? d.day.daily_chance_of_rain : 0));
+  let rainScore = 0;
+  if (maxRainMm >= thr.rainCritMm)       rainScore = 90 + Math.min(10, maxRainMm - thr.rainCritMm);
+  else if (maxRainMm >= thr.rainHighMm)  rainScore = 55 + 35 * (maxRainMm - thr.rainHighMm) / (thr.rainCritMm - thr.rainHighMm);
+  else rainScore = maxRainChance * 0.3;
+
+  const maxWind = Math.max(...days.map(d => d.day ? (d.day.maxwind_kph || d.day.wind_kph || 0) : 0));
+  let windScore = 0;
+  if (maxWind >= thr.windCrit)       windScore = 90 + Math.min(10, maxWind - thr.windCrit);
+  else if (maxWind >= thr.windHigh)  windScore = 55 + 35 * (maxWind - thr.windHigh) / (thr.windCrit - thr.windHigh);
+  else windScore = (maxWind / thr.windHigh) * 24;
+
+  const maxTemp = Math.max(...days.map(d => d.day && d.day.maxtemp_c != null ? d.day.maxtemp_c : 0));
+  const minTemp = Math.min(...days.map(d => d.day && d.day.mintemp_c != null ? d.day.mintemp_c : 99));
+  let tempScore = 0;
+  if (maxTemp >= thr.heatC + 6)  tempScore = 92;
+  else if (maxTemp >= thr.heatC) tempScore = 60 + 30 * (maxTemp - thr.heatC) / 6;
+  if (minTemp <= thr.frostC - 3)       tempScore = Math.max(tempScore, 92);
+  else if (minTemp <= thr.frostC)      tempScore = Math.max(tempScore, 60 + 30 * (thr.frostC - minTemp) / 3);
+
+  return {
+    rain: { score:rainScore, level:riskLevel(rainScore), detail:'Peak: ' + maxRainMm.toFixed(1) + ' mm · ' + maxRainChance + '% chance' },
+    wind: { score:windScore, level:riskLevel(windScore), detail:'Max gusts: ' + fmtWind(maxWind) },
+    temp: { score:tempScore, level:riskLevel(tempScore), detail:'High ' + fmtTemp(maxTemp) + ' · Low ' + fmtTemp(minTemp) },
+  };
+}
+
+function riskBarColor(level) {
+  return { low:'#4ade80', moderate:'#fbbf24', high:'#f97316', critical:'#ef4444' }[level] || '#4ade80';
+}
+
+/* Recommendations */
+function buildRecommendations(risks) {
+  const crop = farmState.crop || 'general';
+  const cropLabel = crop.charAt(0).toUpperCase() + crop.slice(1);
+  const recs = [];
+
+  if (risks.rain.level === 'critical') {
+    recs.push({ cls:'urgent',  icon:'🚨', text:'Heavy rain forecast. Postpone all ground operations for ' + cropLabel + '. Check drainage channels and cover seedbeds.' });
+  } else if (risks.rain.level === 'high') {
+    recs.push({ cls:'warning', icon:'⚠️', text:'Significant rainfall expected. Delay fertiliser and pesticide application. Reinforce furrow drainage.' });
+  } else if (risks.rain.level === 'moderate') {
+    recs.push({ cls:'caution', icon:'🌧', text:'Moderate rain possible. Complete open-field tasks before the rain window.' });
+  } else {
+    recs.push({ cls:'good',    icon:'✅', text:'Rainfall risk is low this week — good conditions for irrigation scheduling.' });
+  }
+
+  if (risks.wind.level === 'critical') {
+    recs.push({ cls:'urgent',  icon:'💨', text:'Dangerous wind speeds ahead. Stake or shelter tall crops. Avoid all spraying operations.' });
+  } else if (risks.wind.level === 'high') {
+    recs.push({ cls:'warning', icon:'🌬', text:'High winds forecast. Postpone aerial/spray operations. Check trellising and shade nets.' });
+  } else if (risks.wind.level === 'moderate') {
+    recs.push({ cls:'caution', icon:'🍃', text:'Moderate wind expected. Spray early morning when winds are calm.' });
+  }
+
+  if (risks.temp.level === 'critical' || risks.temp.level === 'high') {
+    const days = (weatherData && weatherData.forecast && weatherData.forecast.forecastday) || [];
+    const thr = CROP_THRESHOLDS[crop] || CROP_THRESHOLDS.general;
+    const minT = days.length ? Math.min(...days.map(d => d.day && d.day.mintemp_c != null ? d.day.mintemp_c : 99)) : 99;
+    if (minT <= thr.frostC) {
+      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning', icon:'❄️', text:'Frost risk for ' + cropLabel + '! Cover young plants overnight. Irrigate lightly before sunset to raise soil temperature.' });
+    } else {
+      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning', icon:'🔥', text:'Elevated heat forecast. Increase irrigation frequency. Shade netting recommended for ' + cropLabel + '.' });
+    }
+  } else if (risks.temp.level === 'moderate') {
+    recs.push({ cls:'caution', icon:'☀️', text:'Warm conditions — monitor soil moisture more frequently.' });
+  }
+
+  if (risks.rain.level === 'low' && risks.wind.level === 'low' && risks.temp.level === 'low') {
+    recs.push({ cls:'good', icon:'🌟', text:'Excellent conditions across the board. A good window for planting, transplanting, or top-dressing.' });
+  }
+
+  return recs;
+}
+
+/* Render */
+function render(data) {
+  weatherData = data;
+  const cur = data.current  || {};
+  const loc = data.location || {};
+  const fc  = (data.forecast && data.forecast.forecastday) || [];
+  const ai  = data.ai_summary || data.summary || '';
+
+  const tempC = cur.temp_c != null ? cur.temp_c : (cur.temp || 0);
+  const isDay = cur.is_day != null ? cur.is_day : 1;
+
+  document.getElementById('hero-county').textContent =
+    [farmState.name || loc.name, farmState.county || loc.region, loc.country].filter(Boolean).join(' · ');
+  document.getElementById('hero-temp').textContent =
+    farmState.units === 'imperial' ? Math.round(tempC * 9/5 + 32) + '°' : Math.round(tempC) + '°';
+  document.getElementById('hero-condition').textContent = (cur.condition && cur.condition.text) || cur.description || '—';
+  document.getElementById('hero-feels').textContent = 'Feels like ' + fmtTemp(cur.feelslike_c != null ? cur.feelslike_c : (cur.feels_like != null ? cur.feels_like : tempC));
+  document.getElementById('hero-time').textContent = loc.localtime ? 'Local time · ' + loc.localtime : '';
+  document.getElementById('hero-icon').textContent = conditionIcon((cur.condition && cur.condition.text) || cur.description || '', isDay);
+
+  document.getElementById('badge-name').textContent  = farmState.name || loc.name || '—';
+  document.getElementById('badge-crop').textContent  = (farmState.crop || 'general').charAt(0).toUpperCase() + (farmState.crop || 'general').slice(1);
+  document.getElementById('badge-coords').textContent = parseFloat(farmState.lat).toFixed(4) + ', ' + parseFloat(farmState.lon).toFixed(4);
+  document.getElementById('farm-badge').style.display = 'flex';
+
+  const days = fc.slice(0, 7);
+  const risks = computeRisks(days);
+
+  [['rain','rr'],['wind','rw'],['temp','rt']].forEach(function(pair) {
+    const r = risks[pair[0]], p = pair[1];
+    const lvlEl = document.getElementById(p + '-level');
+    const barEl = document.getElementById(p + '-bar');
+    const detEl = document.getElementById(p + '-detail');
+    lvlEl.textContent = r.level.charAt(0).toUpperCase() + r.level.slice(1);
+    lvlEl.className = 'risk-level ' + r.level;
+    barEl.style.width = Math.min(100, r.score) + '%';
+    barEl.style.background = riskBarColor(r.level);
+    detEl.textContent = r.detail;
+  });
+
+  const recs = buildRecommendations(risks);
+  document.getElementById('action-list').innerHTML = recs.map(function(r) {
+    return '<div class="action-item ' + r.cls + '"><span class="action-bullet">' + r.icon + '</span><span>' + r.text + '</span></div>';
+  }).join('');
+
+  document.getElementById('ai-text').textContent = ai || 'No AI summary available for this location.';
+
+  document.getElementById('m-humidity').textContent = (cur.humidity || 0) + '%';
+  document.getElementById('m-wind').textContent     = fmtWind(cur.wind_kph || cur.wind_speed || 0);
+  document.getElementById('m-pressure').textContent = (cur.pressure_mb || cur.pressure || 0) + ' hPa';
+  var uvIdx = cur.uv || cur.uv_index || 0;
+  var uvLbl = uvIdx <= 2 ? 'Low' : uvIdx <= 5 ? 'Mod' : uvIdx <= 7 ? 'High' : 'V.Hi';
+  document.getElementById('m-uv').textContent       = uvIdx + ' · ' + uvLbl;
+  document.getElementById('m-vis').textContent      = fmtVis(cur.vis_km || cur.visibility_km || cur.visibility || 0);
+  document.getElementById('m-precip').textContent   = fmtPrecip(cur.precip_mm || cur.precipitation || 0);
+
+  var strip = document.getElementById('forecast-strip');
+  strip.innerHTML = '';
+  var todayStr = new Date().toDateString();
+  days.forEach(function(day) {
+    var isToday = new Date(day.date + 'T12:00:00').toDateString() === todayStr;
+    var hiC = (day.day && day.day.maxtemp_c != null) ? day.day.maxtemp_c : 0;
+    var loC = (day.day && day.day.mintemp_c != null) ? day.day.mintemp_c : 0;
+    var rain = (day.day && day.day.daily_chance_of_rain != null) ? day.day.daily_chance_of_rain : '';
+    strip.innerHTML +=
+      '<div class="card day-card">' +
+        '<div class="day-date">' + (isToday ? 'Today' : dayName(day.date)) + '</div>' +
+        '<div class="day-icon">' + conditionIcon((day.day && day.day.condition && day.day.condition.text) || '', 1) + '</div>' +
+        '<div class="day-hi">' + fmtTemp(hiC) + '</div>' +
+        '<div class="day-lo">' + fmtTemp(loC) + '</div>' +
+        (rain !== '' ? '<div class="day-rain">💧 ' + rain + '%</div>' : '') +
+      '</div>';
+  });
+
+  var hourly = document.getElementById('hourly-strip');
+  hourly.innerHTML = '';
+  var allHours = fc.reduce(function(a, d) { return a.concat(d.hour || []); }, []).slice(0, 24);
+  var nowH = new Date().getHours();
+  allHours.forEach(function(h, i) {
+    var hTime = h.time || '';
+    var hParsed = new Date(hTime.includes('T') ? hTime : hTime.replace(' ', 'T'));
+    var isNow = (i === 0) || (hParsed.getHours() === nowH && i < 3);
+    var hTempC = h.temp_c != null ? h.temp_c : (h.temp || 0);
+    var hRain  = h.chance_of_rain != null ? h.chance_of_rain : '';
+    hourly.innerHTML +=
+      '<div class="card hour-card' + (isNow ? ' now' : '') + '">' +
+        '<div class="hour-time">' + (isNow ? 'Now' : localHour(hTime)) + '</div>' +
+        '<div class="hour-icon">' + conditionIcon((h.condition && h.condition.text) || '', h.is_day != null ? h.is_day : 1) + '</div>' +
+        '<div class="hour-temp">' + fmtTemp(hTempC) + '</div>' +
+        (hRain !== '' ? '<div class="hour-rain">💧' + hRain + '%</div>' : '') +
+      '</div>';
+  });
+
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('collapse-btn').classList.remove('hidden');
+}
+
+/* Usage widget */
+async function loadUsage() {
+  try {
+    var res  = await fetch('/api/usage');
+    if (!res.ok) return;
+    var data = await res.json();
+    var plan = data.plan || 'free';
+    var used  = data.requests_used  || data.used  || data.count || 0;
+    var limit = data.requests_limit || data.limit || (plan === 'free' ? 1000 : plan === 'pro' ? 50000 : 500000);
+    var left  = data.requests_remaining || data.remaining || (limit - used);
+    var aiUsed  = data.ai_requests_used  || data.ai_used  || 0;
+    var aiLimit = data.ai_requests_limit || data.ai_limit || (plan === 'free' ? 200 : plan === 'pro' ? 10000 : 100000);
+    var aiLeft  = data.ai_requests_remaining || data.ai_remaining || (aiLimit - aiUsed);
+    var reset   = data.period_end || data.reset_at || data.billing_period_end || '';
+
+    document.getElementById('usage-plan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+    document.getElementById('u-used').textContent     = used.toLocaleString();
+    document.getElementById('u-left').textContent     = left.toLocaleString();
+    document.getElementById('u-ai-used').textContent  = aiUsed.toLocaleString();
+    document.getElementById('u-ai-left').textContent  = aiLeft.toLocaleString();
+
+    var reqPct = limit ? Math.round((used / limit) * 100) : 0;
+    var aiPct  = aiLimit ? Math.round((aiUsed / aiLimit) * 100) : 0;
+    var reqBar = document.getElementById('u-bar-req');
+    var aiBar  = document.getElementById('u-bar-ai');
+    reqBar.style.width = reqPct + '%';
+    aiBar.style.width  = aiPct + '%';
+    if (reqPct >= 90) reqBar.classList.add('danger'); else if (reqPct >= 70) reqBar.classList.add('warn');
+    if (aiPct  >= 90) aiBar.classList.add('danger');  else if (aiPct  >= 70) aiBar.classList.add('warn');
+
+    if (reset) {
+      var d = new Date(reset);
+      document.getElementById('u-reset').textContent = 'Resets ' + d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+    }
+  } catch(e) { /* usage is non-critical */ }
+}
+
+/* Error / loading */
+function showError(msg) {
+  var el = document.getElementById('error-banner');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 9000);
+}
+function setLoading(on, msg) {
+  document.getElementById('loading-msg').textContent = msg || 'Analyzing farm conditions...';
+  document.getElementById('loading').classList[on ? 'remove' : 'add']('hidden');
+}
+
+/* Fetch weather */
+async function fetchWeather() {
+  setLoading(true, 'Fetching weather data...');
+  try {
+    var url = '/api/weather?lat=' + farmState.lat + '&lon=' + farmState.lon + '&days=7&units=' + farmState.units + '&ai=true';
+    var res  = await fetch(url);
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+    render(data);
+    loadUsage();
+  } catch(err) {
+    showError('Could not load weather data. ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+/* Analyze button */
+document.getElementById('analyze-btn').addEventListener('click', async function() {
+  var lat    = parseFloat(document.getElementById('f-lat').value);
+  var lon    = parseFloat(document.getElementById('f-lon').value);
+  var name   = document.getElementById('f-name').value.trim();
+  var county = document.getElementById('f-county').value.trim();
+  var crop   = document.getElementById('f-crop').value;
+  var units  = document.getElementById('f-units').value;
+
+  if (isNaN(lat) || lat < -90  || lat > 90)  { showError('Enter a valid latitude (-90 to 90).'); return; }
+  if (isNaN(lon) || lon < -180 || lon > 180) { showError('Enter a valid longitude (-180 to 180).'); return; }
+
+  farmState = { lat:lat, lon:lon, name:name, county:county, crop:crop, units:units };
+  await fetchWeather();
+});
+
+/* Collapse/expand setup panel */
+document.getElementById('collapse-btn').addEventListener('click', function() {
+  var fields = document.getElementById('setup-fields');
+  var btn    = document.getElementById('collapse-btn');
+  var collapsed = fields.style.display === 'none';
+  fields.style.display = collapsed ? '' : 'none';
+  btn.textContent = collapsed ? 'Collapse ▲' : 'Expand ▼';
+});
+
+/* Prefill lat/lon from browser geolocation */
+function tryGeolocate() {
+  if (!('geolocation' in navigator)) return;
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    document.getElementById('f-lat').value = pos.coords.latitude.toFixed(5);
+    document.getElementById('f-lon').value = pos.coords.longitude.toFixed(5);
+  }, function() {}, { timeout: 5000 });
+}
+tryGeolocate();
+
+/* Boot */
+setLoading(false);
+</script>
+</body>
+</html>
