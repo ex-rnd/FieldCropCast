@@ -916,6 +916,80 @@ function render(data) {
 }
 
 /* ── Usage widget ──────────────────────────────────────────────────── */
+/* ── Local AI summary generator ───────────────────────────────────────── */
+function generateSummary(data) {
+  const cur   = data.current  || {};
+  const daily = data.daily    || [];
+  const crop  = (farmState.crop || 'general').toLowerCase();
+  const name  = farmState.name || 'Your farm';
+  if (!daily.length) return '';
+
+  const today    = daily[0] || {};
+  const tempMax  = today.temp_max  != null ? Math.round(today.temp_max)  : '—';
+  const tempMin  = today.temp_min  != null ? Math.round(today.temp_min)  : '—';
+  const curTemp  = cur.temperature != null ? Math.round(cur.temperature) : tempMax;
+  const condText = wmoText(cur.condition_code || today.condition_code || '0');
+
+  // Count rainy days in the 7-day window
+  const rainyDays = daily.filter(function(d) {
+    return d.precipitation_sum > 1 || d.precipitation_probability > 50;
+  }).length;
+
+  // Peak rain day
+  const peakRain = daily.reduce(function(a, b) {
+    return (b.precipitation_sum || 0) > (a.precipitation_sum || 0) ? b : a;
+  }, daily[0]);
+
+  // Max wind day
+  const windyDay = daily.reduce(function(a, b) {
+    return (b.wind_max || 0) > (a.wind_max || 0) ? b : a;
+  }, daily[0]);
+
+  // Outlook sentence
+  var outlook = '';
+  if (rainyDays === 0) {
+    outlook = 'The next 7 days look predominantly dry with minimal rainfall expected.';
+  } else if (rainyDays <= 2) {
+    outlook = 'Mostly dry conditions ahead with ' + rainyDays + ' day(s) of light rain in the forecast.';
+  } else if (rainyDays <= 4) {
+    outlook = rainyDays + ' out of 7 days show rain activity — a mixed week ahead.';
+  } else {
+    outlook = 'A predominantly wet week is expected with rain on ' + rainyDays + ' of the next 7 days.';
+  }
+
+  // Peak rain note
+  var rainNote = '';
+  if (peakRain.precipitation_sum > 5) {
+    var peakDate = new Date(peakRain.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    rainNote = ' The heaviest rainfall (' + peakRain.precipitation_sum.toFixed(1) + ' mm) is expected on ' + peakDate + '.';
+  }
+
+  // Wind note
+  var windNote = '';
+  if (windyDay.wind_max > 30) {
+    windNote = ' Strong winds peaking at ' + windyDay.wind_max + ' km/h are expected — secure any structures or shade nets.';
+  } else if (windyDay.wind_max > 20) {
+    windNote = ' Moderate wind gusts up to ' + windyDay.wind_max + ' km/h are forecast.';
+  }
+
+  // Crop-specific note
+  var cropNote = '';
+  if (crop === 'tea' || crop === 'coffee') {
+    cropNote = ' Cooler nights (low ' + tempMin + '°C) are favorable for ' + crop + ' quality.';
+  } else if (crop === 'maize' || crop === 'wheat' || crop === 'rice') {
+    if (rainyDays >= 3) cropNote = ' Adequate moisture should support ' + crop + ' development this week.';
+    else cropNote = ' Monitor soil moisture closely — irrigation may be needed for ' + crop + '.';
+  } else if (crop === 'tomatoes' || crop === 'potatoes') {
+    if (today.temp_max > 32) cropNote = ' High temperatures may stress ' + crop + ' — consider afternoon shading.';
+    else cropNote = ' Temperatures look manageable for ' + crop + ' growth this week.';
+  } else {
+    cropNote = ' Overall conditions are ' + (rainyDays <= 2 ? 'favorable' : 'mixed') + ' for field operations.';
+  }
+
+  return name + ' is currently experiencing ' + condText.toLowerCase() + ' at ' + curTemp + '°C ' +
+    '(high ' + tempMax + '°C, low ' + tempMin + '°C). ' + outlook + rainNote + windNote + cropNote;
+}
+
 async function loadUsage() {
   try {
     var res = await fetch('/api/usage');
