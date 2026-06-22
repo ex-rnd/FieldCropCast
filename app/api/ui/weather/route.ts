@@ -19,7 +19,13 @@ export async function GET(req: NextRequest) {
   const lon = sp.get('lon');
   if (!lat || !lon) return NextResponse.json({ error: 'lat and lon are required.' }, { status: 400 });
 
-  const params = { lat, lon, days: sp.get('days') || '7', ai: sp.get('ai') || 'true', units: sp.get('units') || 'metric', lang: sp.get('lang') || 'en' };
+  const params = {
+    lat, lon,
+    days:  sp.get('days')  || '7',
+    ai:    sp.get('ai')    || 'true',
+    units: sp.get('units') || 'metric',
+    lang:  sp.get('lang')  || 'en',
+  };
 
   try {
     const response = await fetch(buildUrl('/v1/weather', params), {

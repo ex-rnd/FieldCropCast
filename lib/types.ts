@@ -80,3 +80,24 @@ export interface UsageData {
   limits?: { requests?: number; aiRequests?: number };
   remaining?: { requests?: number; aiRequests?: number };
 }
+
+// ── Webhook alerts ─────────────────────────────────────────────────────────
+export type AlertSeverity = 'info' | 'warning' | 'high' | 'critical';
+
+export type AlertType =
+  | 'heavy_rain'
+  | 'storm'
+  | 'extreme_heat'
+  | 'frost'
+  | 'high_wind'
+  | 'unknown';
+
+export interface WeatherAlert {
+  id: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  message: string;
+  receivedAt: string;
+  expiresAt: string;
+  raw: unknown;
+}

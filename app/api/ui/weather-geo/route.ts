@@ -18,7 +18,12 @@ export async function GET(req: NextRequest) {
   const forwarded = req.headers.get('x-forwarded-for') || '';
   const clientIp = forwarded.split(',')[0].trim() || 'auto';
 
-  const params = { ip: clientIp, days: sp.get('days') || '7', ai: sp.get('ai') || 'true', units: sp.get('units') || 'metric' };
+  const params = {
+    ip:    clientIp,
+    days:  sp.get('days')  || '7',
+    ai:    sp.get('ai')    || 'true',
+    units: sp.get('units') || 'metric',
+  };
 
   try {
     const response = await fetch(buildUrl('/v1/weather-geo', params), {

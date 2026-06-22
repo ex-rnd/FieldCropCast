@@ -11,6 +11,8 @@ interface Props {
   data: WeatherData;
   farmState: FarmState;
   usageData: UsageData | null;
+  isRefreshing?: boolean;
+  lastUpdated?: Date | null;
 }
 
 const RISK_LEVEL_COLOR: Record<string, string> = {
@@ -35,7 +37,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Dashboard({ data, farmState, usageData }: Props) {
+export default function Dashboard({ data, farmState, usageData, isRefreshing = false }: Props) {
   const cur    = data.current  || {};
   const loc    = data.location || {};
   const daily  = (data.daily   || []) as DailyForecast[];
@@ -86,7 +88,25 @@ export default function Dashboard({ data, farmState, usageData }: Props) {
   const barClass = (pct: number) => pct >= 90 ? 'var(--risk-crit)' : pct >= 70 ? 'var(--amber)' : 'var(--green)';
 
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
+
+      {/* ── Refresh banner (non-blocking) ───────────────────────────── */}
+      {isRefreshing && (
+        <div
+          className="flex items-center gap-2 px-4 py-2 rounded-lg mb-4 text-xs font-medium"
+          style={{ background: 'rgba(74,222,128,.08)', border: '1px solid rgba(74,222,128,.2)', color: 'var(--green)' }}
+        >
+          <svg
+            width="12" height="12" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" strokeWidth="2.5"
+            style={{ animation: 'spin .7s linear infinite', flexShrink: 0 }}
+          >
+            <path d="M23 4v6h-6" /><path d="M1 20v-6h6" />
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          </svg>
+          Refreshing weather data — current data remains visible…
+        </div>
+      )}
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
       <div className="card mb-4 p-7 grid gap-4 items-center" style={{ gridTemplateColumns: '1fr auto' }}>
