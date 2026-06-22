@@ -30,6 +30,13 @@ async function proxyGet(endpoint, params, res) {
       headers: { Authorization: 'Bearer ' + API_KEY },
     });
     const data = await response.json();
+    console.log('[' + endpoint + '] keys:', Object.keys(data));
+    if (endpoint === '/v1/usage') console.log('[usage] raw:', JSON.stringify(data));
+    if (endpoint === '/v1/weather' && data.ai_summary !== undefined) console.log('[weather] ai_summary present');
+    if (endpoint === '/v1/weather') {
+      const aiKey = Object.keys(data).find(k => k.toLowerCase().includes('ai') || k.toLowerCase().includes('summary'));
+      if (aiKey) console.log('[weather] AI field:', aiKey, '->', typeof data[aiKey] === 'string' ? data[aiKey].slice(0,80) : data[aiKey]);
+    }
     for (const h of ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset']) {
       if (response.headers.get(h)) res.setHeader(h, response.headers.get(h));
     }

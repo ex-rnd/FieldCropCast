@@ -574,76 +574,115 @@ footer a { color: var(--green); text-decoration: none; }
 </div><!-- /app -->
 
 <script>
-/* State */
+/* ── State ─────────────────────────────────────────────────────────── */
 let farmState = { name:'', county:'', lat:null, lon:null, crop:'general', units:'metric' };
 let weatherData = null;
 
-/* Theme */
+/* ── Theme ─────────────────────────────────────────────────────────── */
 const html = document.documentElement;
 const themeBtn = document.getElementById('theme-btn');
 const savedTheme = localStorage.getItem('fc-theme') ||
   (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
 setTheme(savedTheme, false);
-
 function setTheme(t, save) {
   html.setAttribute('data-theme', t);
   themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
   if (save !== false) localStorage.setItem('fc-theme', t);
 }
-themeBtn.addEventListener('click', () => {
+themeBtn.addEventListener('click', function() {
   setTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 });
 
-/* Helpers */
-const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-function conditionIcon(text, isDay) {
-  text = (text || '').toLowerCase();
-  if (isDay === undefined) isDay = 1;
-  if (text.includes('thunder') || text.includes('storm')) return '⛈';
-  if (text.includes('drizzle') || text.includes('mist'))  return '🌦';
-  if (text.includes('heavy rain') || text.includes('torrential')) return '🌧';
-  if (text.includes('rain') || text.includes('shower'))   return isDay ? '🌦' : '🌧';
-  if (text.includes('snow') || text.includes('blizzard')) return '❄️';
-  if (text.includes('sleet') || text.includes('ice'))     return '🌨';
-  if (text.includes('fog') || text.includes('haze'))      return '🌫';
-  if (text.includes('overcast'))                         return '☁️';
-  if (text.includes('cloudy') || text.includes('cloud')) return isDay ? '⛅' : '☁️';
-  if (text.includes('sunny') || text.includes('clear'))  return isDay ? '☀️' : '🌙';
-  if (text.includes('partly'))                           return isDay ? '🌤' : '🌙';
-  if (text.includes('wind'))                             return '🌬';
+/* ── WMO condition code → emoji ─────────────────────────────────────
+   https://open-meteo.com/en/docs#weathervariables (WMO 4677)
+   WeatherAI uses the same codes.
+──────────────────────────────────────────────────────────────────── */
+function wmoIcon(code, isDay) {
+  code = parseInt(code, 10);
+  isDay = isDay !== false;
+  if (code === 0)                     return isDay ? '☀️' : '🌙';
+  if (code === 1)                     return isDay ? '🌤' : '🌙';
+  if (code === 2)                     return isDay ? '⛅' : '☁️';
+  if (code === 3)                     return '☁️';
+  if (code === 45 || code === 48)     return '🌫';
+  if (code >= 51 && code <= 55)       return '🌦';
+  if (code >= 56 && code <= 57)       return '🌨';
+  if (code >= 61 && code <= 65)       return '🌧';
+  if (code >= 66 && code <= 67)       return '🌨';
+  if (code >= 71 && code <= 77)       return '❄️';
+  if (code >= 80 && code <= 82)       return isDay ? '🌦' : '🌧';
+  if (code === 85 || code === 86)     return '🌨';
+  if (code === 95)                    return '⛈';
+  if (code === 96 || code === 99)     return '⛈';
   return isDay ? '🌤' : '🌙';
 }
 
+function wmoText(code) {
+  code = parseInt(code, 10);
+  if (code === 0)  return 'Clear sky';
+  if (code === 1)  return 'Mainly clear';
+  if (code === 2)  return 'Partly cloudy';
+  if (code === 3)  return 'Overcast';
+  if (code === 45 || code === 48) return 'Foggy';
+  if (code === 51) return 'Light drizzle';
+  if (code === 53) return 'Moderate drizzle';
+  if (code === 55) return 'Dense drizzle';
+  if (code === 61) return 'Slight rain';
+  if (code === 63) return 'Moderate rain';
+  if (code === 65) return 'Heavy rain';
+  if (code >= 71 && code <= 77) return 'Snow';
+  if (code >= 80 && code <= 82) return 'Rain showers';
+  if (code === 95) return 'Thunderstorm';
+  if (code === 96 || code === 99) return 'Thunderstorm with hail';
+  return 'Mixed conditions';
+}
+
+/* ── Degrees → cardinal direction ──────────────────────────────────── */
+function degreesToCardinal(deg) {
+  if (deg == null) return '';
+  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+/* ── Determine daytime from daily sunrise/sunset ───────────────────── */
+function isDaytime(daily) {
+  if (!daily || !daily.length) return true;
+  const today = daily[0];
+  if (!today.sunrise || !today.sunset) return true;
+  const now = new Date();
+  return now >= new Date(today.sunrise) && now <= new Date(today.sunset);
+}
+
+/* ── Helpers ───────────────────────────────────────────────────────── */
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function dayName(dateStr) {
+  return DAY_NAMES[new Date(dateStr + 'T12:00:00').getDay()];
+}
+function localHour(isoStr) {
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:true });
+}
+
 function fmtTemp(c) {
+  if (c == null) return '—';
   return farmState.units === 'imperial'
     ? Math.round(c * 9/5 + 32) + '°F'
     : Math.round(c) + '°C';
 }
 function fmtWind(kph) {
+  if (kph == null) return '—';
   return farmState.units === 'imperial'
     ? Math.round(kph * 0.621) + ' mph'
     : Math.round(kph) + ' km/h';
 }
-function fmtVis(km) {
-  return farmState.units === 'imperial'
-    ? (km * 0.621).toFixed(1) + ' mi'
-    : km + ' km';
-}
 function fmtPrecip(mm) {
+  if (mm == null) return '—';
   return farmState.units === 'imperial'
     ? (mm * 0.0394).toFixed(2) + '"'
     : mm + ' mm';
 }
-function localHour(t) {
-  const d = new Date(t.includes('T') ? t : t.replace(' ','T'));
-  return d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:true });
-}
-function dayName(dateStr) {
-  return DAY_NAMES[new Date(dateStr + 'T12:00:00').getDay()];
-}
 
-/* Risk engine */
+/* ── Risk engine (uses data.daily[]) ──────────────────────────────── */
 const CROP_THRESHOLDS = {
   tea:       { heatC:30, frostC:5,  windHigh:30, windCrit:55, rainHighMm:15, rainCritMm:30 },
   coffee:    { heatC:32, frostC:4,  windHigh:25, windCrit:50, rainHighMm:20, rainCritMm:40 },
@@ -658,210 +697,247 @@ const CROP_THRESHOLDS = {
   general:   { heatC:35, frostC:3,  windHigh:35, windCrit:60, rainHighMm:20, rainCritMm:40 },
 };
 
-function riskLevel(score) {
+function riskLabel(score) {
   if (score >= 85) return 'critical';
   if (score >= 55) return 'high';
   if (score >= 25) return 'moderate';
   return 'low';
 }
+function riskBarColor(level) {
+  return { low:'#4ade80', moderate:'#fbbf24', high:'#f97316', critical:'#ef4444' }[level] || '#4ade80';
+}
 
-function computeRisks(days) {
+/* daily[] entries: { date, temp_min, temp_max, precipitation_sum,
+                      precipitation_probability, wind_max, condition_code } */
+function computeRisks(daily) {
   const thr = CROP_THRESHOLDS[farmState.crop] || CROP_THRESHOLDS.general;
 
-  const maxRainMm     = Math.max(...days.map(d => d.day && d.day.totalprecip_mm != null ? d.day.totalprecip_mm : 0));
-  const maxRainChance = Math.max(...days.map(d => d.day && d.day.daily_chance_of_rain != null ? d.day.daily_chance_of_rain : 0));
+  // Rain: use precipitation_sum (mm) + precipitation_probability (%)
+  const maxPrecip  = Math.max(...daily.map(d => d.precipitation_sum  || 0));
+  const maxPrecipP = Math.max(...daily.map(d => d.precipitation_probability || 0));
   let rainScore = 0;
-  if (maxRainMm >= thr.rainCritMm)       rainScore = 90 + Math.min(10, maxRainMm - thr.rainCritMm);
-  else if (maxRainMm >= thr.rainHighMm)  rainScore = 55 + 35 * (maxRainMm - thr.rainHighMm) / (thr.rainCritMm - thr.rainHighMm);
-  else rainScore = maxRainChance * 0.3;
+  if (maxPrecip >= thr.rainCritMm)      rainScore = 90 + Math.min(10, maxPrecip - thr.rainCritMm);
+  else if (maxPrecip >= thr.rainHighMm) rainScore = 55 + 35 * (maxPrecip - thr.rainHighMm) / (thr.rainCritMm - thr.rainHighMm);
+  else rainScore = maxPrecipP * 0.3;
 
-  const maxWind = Math.max(...days.map(d => d.day ? (d.day.maxwind_kph || d.day.wind_kph || 0) : 0));
+  // Wind: wind_max (km/h)
+  const maxWind = Math.max(...daily.map(d => d.wind_max || 0));
   let windScore = 0;
   if (maxWind >= thr.windCrit)       windScore = 90 + Math.min(10, maxWind - thr.windCrit);
   else if (maxWind >= thr.windHigh)  windScore = 55 + 35 * (maxWind - thr.windHigh) / (thr.windCrit - thr.windHigh);
   else windScore = (maxWind / thr.windHigh) * 24;
 
-  const maxTemp = Math.max(...days.map(d => d.day && d.day.maxtemp_c != null ? d.day.maxtemp_c : 0));
-  const minTemp = Math.min(...days.map(d => d.day && d.day.mintemp_c != null ? d.day.mintemp_c : 99));
+  // Heat / Frost: temp_max / temp_min
+  const maxTemp = Math.max(...daily.map(d => d.temp_max || 0));
+  const minTemp = Math.min(...daily.map(d => d.temp_min != null ? d.temp_min : 99));
   let tempScore = 0;
   if (maxTemp >= thr.heatC + 6)  tempScore = 92;
   else if (maxTemp >= thr.heatC) tempScore = 60 + 30 * (maxTemp - thr.heatC) / 6;
-  if (minTemp <= thr.frostC - 3)       tempScore = Math.max(tempScore, 92);
-  else if (minTemp <= thr.frostC)      tempScore = Math.max(tempScore, 60 + 30 * (thr.frostC - minTemp) / 3);
+  if (minTemp <= thr.frostC - 3)      tempScore = Math.max(tempScore, 92);
+  else if (minTemp <= thr.frostC)     tempScore = Math.max(tempScore, 60 + 30 * (thr.frostC - minTemp) / 3);
 
   return {
-    rain: { score:rainScore, level:riskLevel(rainScore), detail:'Peak: ' + maxRainMm.toFixed(1) + ' mm · ' + maxRainChance + '% chance' },
-    wind: { score:windScore, level:riskLevel(windScore), detail:'Max gusts: ' + fmtWind(maxWind) },
-    temp: { score:tempScore, level:riskLevel(tempScore), detail:'High ' + fmtTemp(maxTemp) + ' · Low ' + fmtTemp(minTemp) },
+    rain: { score:rainScore, level:riskLabel(rainScore),
+            detail:'Peak: ' + fmtPrecip(maxPrecip) + ' · ' + maxPrecipP + '% chance' },
+    wind: { score:windScore, level:riskLabel(windScore),
+            detail:'Max: ' + fmtWind(maxWind) },
+    temp: { score:tempScore, level:riskLabel(tempScore),
+            detail:'High ' + fmtTemp(maxTemp) + ' · Low ' + fmtTemp(minTemp) },
   };
 }
 
-function riskBarColor(level) {
-  return { low:'#4ade80', moderate:'#fbbf24', high:'#f97316', critical:'#ef4444' }[level] || '#4ade80';
-}
-
-/* Recommendations */
-function buildRecommendations(risks) {
+/* ── Recommendations ───────────────────────────────────────────────── */
+function buildRecommendations(risks, daily) {
   const crop = farmState.crop || 'general';
   const cropLabel = crop.charAt(0).toUpperCase() + crop.slice(1);
+  const thr = CROP_THRESHOLDS[crop] || CROP_THRESHOLDS.general;
   const recs = [];
 
   if (risks.rain.level === 'critical') {
-    recs.push({ cls:'urgent',  icon:'🚨', text:'Heavy rain forecast. Postpone all ground operations for ' + cropLabel + '. Check drainage channels and cover seedbeds.' });
+    recs.push({ cls:'urgent',  icon:'🚨', text:'Heavy rain forecast. Postpone all ground operations for ' + cropLabel + '. Inspect drainage channels and cover exposed seedbeds.' });
   } else if (risks.rain.level === 'high') {
     recs.push({ cls:'warning', icon:'⚠️', text:'Significant rainfall expected. Delay fertiliser and pesticide application. Reinforce furrow drainage.' });
   } else if (risks.rain.level === 'moderate') {
     recs.push({ cls:'caution', icon:'🌧', text:'Moderate rain possible. Complete open-field tasks before the rain window.' });
   } else {
-    recs.push({ cls:'good',    icon:'✅', text:'Rainfall risk is low this week — good conditions for irrigation scheduling.' });
+    recs.push({ cls:'good',    icon:'✅', text:'Rainfall risk is low — good conditions for irrigation scheduling and field operations.' });
   }
 
   if (risks.wind.level === 'critical') {
-    recs.push({ cls:'urgent',  icon:'💨', text:'Dangerous wind speeds ahead. Stake or shelter tall crops. Avoid all spraying operations.' });
+    recs.push({ cls:'urgent',  icon:'💨', text:'Dangerous wind speeds expected. Stake tall ' + cropLabel + ' plants. Suspend all spray operations.' });
   } else if (risks.wind.level === 'high') {
-    recs.push({ cls:'warning', icon:'🌬', text:'High winds forecast. Postpone aerial/spray operations. Check trellising and shade nets.' });
+    recs.push({ cls:'warning', icon:'🌬', text:'High winds forecast. Postpone aerial or spray work. Check trellising and shade nets.' });
   } else if (risks.wind.level === 'moderate') {
-    recs.push({ cls:'caution', icon:'🍃', text:'Moderate wind expected. Spray early morning when winds are calm.' });
+    recs.push({ cls:'caution', icon:'🍃', text:'Moderate wind expected. Schedule spraying for early morning when air is calm.' });
   }
 
   if (risks.temp.level === 'critical' || risks.temp.level === 'high') {
-    const days = (weatherData && weatherData.forecast && weatherData.forecast.forecastday) || [];
-    const thr = CROP_THRESHOLDS[crop] || CROP_THRESHOLDS.general;
-    const minT = days.length ? Math.min(...days.map(d => d.day && d.day.mintemp_c != null ? d.day.mintemp_c : 99)) : 99;
+    const minT = daily.length ? Math.min(...daily.map(d => d.temp_min != null ? d.temp_min : 99)) : 99;
     if (minT <= thr.frostC) {
-      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning', icon:'❄️', text:'Frost risk for ' + cropLabel + '! Cover young plants overnight. Irrigate lightly before sunset to raise soil temperature.' });
+      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning',
+        icon:'❄️', text:'Frost risk for ' + cropLabel + '! Cover young plants overnight. Light irrigation before sunset raises soil temperature.' });
     } else {
-      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning', icon:'🔥', text:'Elevated heat forecast. Increase irrigation frequency. Shade netting recommended for ' + cropLabel + '.' });
+      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning',
+        icon:'🔥', text:'Elevated heat forecast. Increase irrigation frequency. Consider shade netting for ' + cropLabel + '.' });
     }
   } else if (risks.temp.level === 'moderate') {
-    recs.push({ cls:'caution', icon:'☀️', text:'Warm conditions — monitor soil moisture more frequently.' });
+    recs.push({ cls:'caution', icon:'☀️', text:'Warm conditions — monitor soil moisture closely and water in the early morning.' });
   }
 
   if (risks.rain.level === 'low' && risks.wind.level === 'low' && risks.temp.level === 'low') {
-    recs.push({ cls:'good', icon:'🌟', text:'Excellent conditions across the board. A good window for planting, transplanting, or top-dressing.' });
+    recs.push({ cls:'good', icon:'🌟', text:'Excellent conditions across the board — ideal window for planting, transplanting, or top-dressing.' });
   }
-
   return recs;
 }
 
-/* Render */
+/* ── Render ────────────────────────────────────────────────────────── */
 function render(data) {
   weatherData = data;
-  const cur = data.current  || {};
-  const loc = data.location || {};
-  const fc  = (data.forecast && data.forecast.forecastday) || [];
-  const ai  = data.ai_summary || data.summary || '';
 
-  const tempC = cur.temp_c != null ? cur.temp_c : (cur.temp || 0);
-  const isDay = cur.is_day != null ? cur.is_day : 1;
+  const cur    = data.current  || {};
+  const loc    = data.location || {};
+  const daily  = data.daily    || [];
+  const hourly = data.hourly   || [];
+  const ai     = data.ai_summary || data.summary || generateSummary(data);
 
+  // Derive daytime flag from sunrise/sunset
+  const isDay = isDaytime(daily);
+
+  // Pull current-hour metrics from hourly[] (the API puts humidity/UV/feels_like there)
+  const now = new Date();
+  const curHour = hourly.find(function(h) {
+    const hd = new Date(h.time);
+    return hd.toDateString() === now.toDateString() && hd.getHours() === now.getHours();
+  }) || hourly[0] || {};
+
+  // ── Hero ──
+  const tempC = cur.temperature != null ? cur.temperature : (curHour.temperature || 0);
   document.getElementById('hero-county').textContent =
-    [farmState.name || loc.name, farmState.county || loc.region, loc.country].filter(Boolean).join(' · ');
+    [farmState.name, farmState.county || loc.country].filter(Boolean).join(' · ') || loc.country || '—';
   document.getElementById('hero-temp').textContent =
     farmState.units === 'imperial' ? Math.round(tempC * 9/5 + 32) + '°' : Math.round(tempC) + '°';
-  document.getElementById('hero-condition').textContent = (cur.condition && cur.condition.text) || cur.description || '—';
-  document.getElementById('hero-feels').textContent = 'Feels like ' + fmtTemp(cur.feelslike_c != null ? cur.feelslike_c : (cur.feels_like != null ? cur.feels_like : tempC));
-  document.getElementById('hero-time').textContent = loc.localtime ? 'Local time · ' + loc.localtime : '';
-  document.getElementById('hero-icon').textContent = conditionIcon((cur.condition && cur.condition.text) || cur.description || '', isDay);
+  document.getElementById('hero-condition').textContent = wmoText(cur.condition_code || curHour.condition_code || 0);
+  document.getElementById('hero-feels').textContent = curHour.feels_like != null
+    ? 'Feels like ' + fmtTemp(curHour.feels_like) : '';
+  document.getElementById('hero-time').textContent = cur.time
+    ? 'Local time · ' + cur.time.replace('T', ' ') : '';
+  document.getElementById('hero-icon').textContent = wmoIcon(cur.condition_code || curHour.condition_code || 0, isDay);
 
-  document.getElementById('badge-name').textContent  = farmState.name || loc.name || '—';
-  document.getElementById('badge-crop').textContent  = (farmState.crop || 'general').charAt(0).toUpperCase() + (farmState.crop || 'general').slice(1);
+  // Farm badge
+  document.getElementById('badge-name').textContent   = farmState.name || '—';
+  document.getElementById('badge-crop').textContent   = (farmState.crop || 'general').charAt(0).toUpperCase() + (farmState.crop || 'general').slice(1);
   document.getElementById('badge-coords').textContent = parseFloat(farmState.lat).toFixed(4) + ', ' + parseFloat(farmState.lon).toFixed(4);
   document.getElementById('farm-badge').style.display = 'flex';
 
-  const days = fc.slice(0, 7);
-  const risks = computeRisks(days);
-
+  // ── Risk cards ──
+  const risks = computeRisks(daily);
   [['rain','rr'],['wind','rw'],['temp','rt']].forEach(function(pair) {
     const r = risks[pair[0]], p = pair[1];
     const lvlEl = document.getElementById(p + '-level');
     const barEl = document.getElementById(p + '-bar');
-    const detEl = document.getElementById(p + '-detail');
     lvlEl.textContent = r.level.charAt(0).toUpperCase() + r.level.slice(1);
     lvlEl.className = 'risk-level ' + r.level;
     barEl.style.width = Math.min(100, r.score) + '%';
     barEl.style.background = riskBarColor(r.level);
-    detEl.textContent = r.detail;
+    document.getElementById(p + '-detail').textContent = r.detail;
   });
 
-  const recs = buildRecommendations(risks);
+  // ── Recommendations ──
+  const recs = buildRecommendations(risks, daily);
   document.getElementById('action-list').innerHTML = recs.map(function(r) {
     return '<div class="action-item ' + r.cls + '"><span class="action-bullet">' + r.icon + '</span><span>' + r.text + '</span></div>';
   }).join('');
 
-  document.getElementById('ai-text').textContent = ai || 'No AI summary available for this location.';
+  // ── AI summary ──
+  document.getElementById('ai-text').textContent = ai || 'Weather data loaded. Enable AI summaries on a supported plan for Gemini-generated insights.';
 
-  document.getElementById('m-humidity').textContent = (cur.humidity || 0) + '%';
-  document.getElementById('m-wind').textContent     = fmtWind(cur.wind_kph || cur.wind_speed || 0);
-  document.getElementById('m-pressure').textContent = (cur.pressure_mb || cur.pressure || 0) + ' hPa';
-  var uvIdx = cur.uv || cur.uv_index || 0;
-  var uvLbl = uvIdx <= 2 ? 'Low' : uvIdx <= 5 ? 'Mod' : uvIdx <= 7 ? 'High' : 'V.Hi';
+  // ── Metrics (from current-hour entry) ──
+  const windDir = degreesToCardinal(cur.wind_direction != null ? cur.wind_direction : curHour.wind_direction);
+  document.getElementById('m-humidity').textContent = curHour.humidity != null ? curHour.humidity + '%' : '—';
+  document.getElementById('m-wind').textContent     = fmtWind(cur.wind_speed != null ? cur.wind_speed : curHour.wind_speed) + (windDir ? ' ' + windDir : '');
+  document.getElementById('m-pressure').textContent = '—'; // not in this API response
+  const uvIdx = curHour.uv_index != null ? curHour.uv_index : 0;
+  const uvLbl = uvIdx <= 2 ? 'Low' : uvIdx <= 5 ? 'Mod' : uvIdx <= 7 ? 'High' : 'V.Hi';
   document.getElementById('m-uv').textContent       = uvIdx + ' · ' + uvLbl;
-  document.getElementById('m-vis').textContent      = fmtVis(cur.vis_km || cur.visibility_km || cur.visibility || 0);
-  document.getElementById('m-precip').textContent   = fmtPrecip(cur.precip_mm || cur.precipitation || 0);
+  document.getElementById('m-vis').textContent      = '—'; // not in this API response
+  document.getElementById('m-precip').textContent   = daily[0] ? fmtPrecip(daily[0].precipitation_sum) : '—';
 
+  // ── 7-day forecast (from daily[]) ──
   var strip = document.getElementById('forecast-strip');
   strip.innerHTML = '';
-  var todayStr = new Date().toDateString();
-  days.forEach(function(day) {
+  var todayStr = now.toDateString();
+  daily.slice(0, 7).forEach(function(day) {
     var isToday = new Date(day.date + 'T12:00:00').toDateString() === todayStr;
-    var hiC = (day.day && day.day.maxtemp_c != null) ? day.day.maxtemp_c : 0;
-    var loC = (day.day && day.day.mintemp_c != null) ? day.day.mintemp_c : 0;
-    var rain = (day.day && day.day.daily_chance_of_rain != null) ? day.day.daily_chance_of_rain : '';
+    var rain = day.precipitation_probability != null ? day.precipitation_probability : '';
     strip.innerHTML +=
       '<div class="card day-card">' +
         '<div class="day-date">' + (isToday ? 'Today' : dayName(day.date)) + '</div>' +
-        '<div class="day-icon">' + conditionIcon((day.day && day.day.condition && day.day.condition.text) || '', 1) + '</div>' +
-        '<div class="day-hi">' + fmtTemp(hiC) + '</div>' +
-        '<div class="day-lo">' + fmtTemp(loC) + '</div>' +
+        '<div class="day-icon">' + wmoIcon(day.condition_code, true) + '</div>' +
+        '<div class="day-hi">'  + fmtTemp(day.temp_max) + '</div>' +
+        '<div class="day-lo">'  + fmtTemp(day.temp_min) + '</div>' +
         (rain !== '' ? '<div class="day-rain">💧 ' + rain + '%</div>' : '') +
       '</div>';
   });
 
-  var hourly = document.getElementById('hourly-strip');
-  hourly.innerHTML = '';
-  var allHours = fc.reduce(function(a, d) { return a.concat(d.hour || []); }, []).slice(0, 24);
-  var nowH = new Date().getHours();
-  allHours.forEach(function(h, i) {
-    var hTime = h.time || '';
-    var hParsed = new Date(hTime.includes('T') ? hTime : hTime.replace(' ', 'T'));
-    var isNow = (i === 0) || (hParsed.getHours() === nowH && i < 3);
-    var hTempC = h.temp_c != null ? h.temp_c : (h.temp || 0);
-    var hRain  = h.chance_of_rain != null ? h.chance_of_rain : '';
-    hourly.innerHTML +=
-      '<div class="card hour-card' + (isNow ? ' now' : '') + '">' +
-        '<div class="hour-time">' + (isNow ? 'Now' : localHour(hTime)) + '</div>' +
-        '<div class="hour-icon">' + conditionIcon((h.condition && h.condition.text) || '', h.is_day != null ? h.is_day : 1) + '</div>' +
-        '<div class="hour-temp">' + fmtTemp(hTempC) + '</div>' +
-        (hRain !== '' ? '<div class="hour-rain">💧' + hRain + '%</div>' : '') +
+  // ── Hourly (next 24 h from hourly[]) ──
+  var hourlyEl = document.getElementById('hourly-strip');
+  hourlyEl.innerHTML = '';
+  // Start from the current hour forward
+  var startIdx = 0;
+  for (var i = 0; i < hourly.length; i++) {
+    if (new Date(hourly[i].time) >= new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours())) {
+      startIdx = i; break;
+    }
+  }
+  hourly.slice(startIdx, startIdx + 24).forEach(function(h, i) {
+    var hIsDay = isDaytime(daily); // rough — good enough for hourly icons
+    // Better: check if within sunrise/sunset of that hour's date
+    if (daily.length) {
+      var hDate = new Date(h.time);
+      var dayEntry = daily.find(function(d) { return d.date === hDate.toISOString().slice(0,10); });
+      if (dayEntry && dayEntry.sunrise && dayEntry.sunset) {
+        hIsDay = hDate >= new Date(dayEntry.sunrise) && hDate <= new Date(dayEntry.sunset);
+      }
+    }
+    var rain = h.precipitation_probability != null ? h.precipitation_probability : '';
+    hourlyEl.innerHTML +=
+      '<div class="card hour-card' + (i === 0 ? ' now' : '') + '">' +
+        '<div class="hour-time">' + (i === 0 ? 'Now' : localHour(h.time)) + '</div>' +
+        '<div class="hour-icon">' + wmoIcon(h.condition_code, hIsDay) + '</div>' +
+        '<div class="hour-temp">' + fmtTemp(h.temperature) + '</div>' +
+        (rain !== '' ? '<div class="hour-rain">💧' + rain + '%</div>' : '') +
       '</div>';
   });
 
+  // Show dashboard
   document.getElementById('empty-state').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('collapse-btn').classList.remove('hidden');
 }
 
-/* Usage widget */
+/* ── Usage widget ──────────────────────────────────────────────────── */
 async function loadUsage() {
   try {
-    var res  = await fetch('/api/usage');
+    var res = await fetch('/api/usage');
     if (!res.ok) return;
     var data = await res.json();
-    var plan = data.plan || 'free';
-    var used  = data.requests_used  || data.used  || data.count || 0;
-    var limit = data.requests_limit || data.limit || (plan === 'free' ? 1000 : plan === 'pro' ? 50000 : 500000);
-    var left  = data.requests_remaining || data.remaining || (limit - used);
-    var aiUsed  = data.ai_requests_used  || data.ai_used  || 0;
-    var aiLimit = data.ai_requests_limit || data.ai_limit || (plan === 'free' ? 200 : plan === 'pro' ? 10000 : 100000);
-    var aiLeft  = data.ai_requests_remaining || data.ai_remaining || (aiLimit - aiUsed);
-    var reset   = data.period_end || data.reset_at || data.billing_period_end || '';
+    var plan    = data.plan || 'free';
+    var period  = data.period  || {};
+    var limits  = data.limits  || {};
+    var rem     = data.remaining || {};
+    var used    = period.requestCount   || 0;
+    var limit   = limits.requests       || 1000;
+    var left    = rem.requests          != null ? rem.requests   : (limit - used);
+    var aiUsed  = period.aiRequestCount || 0;
+    var aiLimit = limits.aiRequests     || 200;
+    var aiLeft  = rem.aiRequests        != null ? rem.aiRequests : (aiLimit - aiUsed);
+    var reset   = period.end            || '';
 
-    document.getElementById('usage-plan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
-    document.getElementById('u-used').textContent     = used.toLocaleString();
-    document.getElementById('u-left').textContent     = left.toLocaleString();
-    document.getElementById('u-ai-used').textContent  = aiUsed.toLocaleString();
-    document.getElementById('u-ai-left').textContent  = aiLeft.toLocaleString();
+    document.getElementById('usage-plan').textContent   = plan.charAt(0).toUpperCase() + plan.slice(1);
+    document.getElementById('u-used').textContent       = used.toLocaleString();
+    document.getElementById('u-left').textContent       = left.toLocaleString();
+    document.getElementById('u-ai-used').textContent    = aiUsed.toLocaleString();
+    document.getElementById('u-ai-left').textContent    = aiLeft.toLocaleString();
 
     var reqPct = limit ? Math.round((used / limit) * 100) : 0;
     var aiPct  = aiLimit ? Math.round((aiUsed / aiLimit) * 100) : 0;
@@ -869,20 +945,20 @@ async function loadUsage() {
     var aiBar  = document.getElementById('u-bar-ai');
     reqBar.style.width = reqPct + '%';
     aiBar.style.width  = aiPct + '%';
-    if (reqPct >= 90) reqBar.classList.add('danger'); else if (reqPct >= 70) reqBar.classList.add('warn');
-    if (aiPct  >= 90) aiBar.classList.add('danger');  else if (aiPct  >= 70) aiBar.classList.add('warn');
-
+    reqBar.className = 'usage-bar-fill' + (reqPct >= 90 ? ' danger' : reqPct >= 70 ? ' warn' : '');
+    aiBar.className  = 'usage-bar-fill' + (aiPct  >= 90 ? ' danger' : aiPct  >= 70 ? ' warn' : '');
     if (reset) {
       var d = new Date(reset);
-      document.getElementById('u-reset').textContent = 'Resets ' + d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+      document.getElementById('u-reset').textContent =
+        'Resets ' + d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
     }
-  } catch(e) { /* usage is non-critical */ }
+  } catch(e) {}
 }
 
-/* Error / loading */
+/* ── Error / loading ───────────────────────────────────────────────── */
 function showError(msg) {
   var el = document.getElementById('error-banner');
-  el.textContent = '⚠ ' + msg;
+  el.textContent = msg;
   el.style.display = 'block';
   setTimeout(function() { el.style.display = 'none'; }, 9000);
 }
@@ -891,24 +967,26 @@ function setLoading(on, msg) {
   document.getElementById('loading').classList[on ? 'remove' : 'add']('hidden');
 }
 
-/* Fetch weather */
+/* ── Fetch weather ─────────────────────────────────────────────────── */
 async function fetchWeather() {
   setLoading(true, 'Fetching weather data...');
   try {
-    var url = '/api/weather?lat=' + farmState.lat + '&lon=' + farmState.lon + '&days=7&units=' + farmState.units + '&ai=true';
+    var url = '/api/weather?lat=' + farmState.lat +
+              '&lon=' + farmState.lon +
+              '&days=7&units=' + farmState.units + '&ai=true';
     var res  = await fetch(url);
     var data = await res.json();
     if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
     render(data);
     loadUsage();
   } catch(err) {
-    showError('Could not load weather data. ' + err.message);
+    showError('Could not load weather data: ' + err.message);
   } finally {
     setLoading(false);
   }
 }
 
-/* Analyze button */
+/* ── Analyze button ────────────────────────────────────────────────── */
 document.getElementById('analyze-btn').addEventListener('click', async function() {
   var lat    = parseFloat(document.getElementById('f-lat').value);
   var lon    = parseFloat(document.getElementById('f-lon').value);
@@ -924,7 +1002,7 @@ document.getElementById('analyze-btn').addEventListener('click', async function(
   await fetchWeather();
 });
 
-/* Collapse/expand setup panel */
+/* ── Collapse/expand setup ─────────────────────────────────────────── */
 document.getElementById('collapse-btn').addEventListener('click', function() {
   var fields = document.getElementById('setup-fields');
   var btn    = document.getElementById('collapse-btn');
@@ -933,7 +1011,7 @@ document.getElementById('collapse-btn').addEventListener('click', function() {
   btn.textContent = collapsed ? 'Collapse ▲' : 'Expand ▼';
 });
 
-/* Prefill lat/lon from browser geolocation */
+/* ── Geolocation prefill ───────────────────────────────────────────── */
 function tryGeolocate() {
   if (!('geolocation' in navigator)) return;
   navigator.geolocation.getCurrentPosition(function(pos) {
@@ -943,7 +1021,7 @@ function tryGeolocate() {
 }
 tryGeolocate();
 
-/* Boot */
+/* ── Boot ──────────────────────────────────────────────────────────── */
 setLoading(false);
 </script>
 </body>
