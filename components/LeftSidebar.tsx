@@ -166,22 +166,6 @@ function SetupForm({ farmState, onChange, onAnalyze, isFetching, units, onCancel
         )}
       </button>
 
-      {/* Webhook URL hint */}
-      <div className="mt-2 p-3 rounded-lg" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-        <div className="text-[9px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--muted)' }}>
-          Webhook URL
-        </div>
-        <code
-          className="text-[9px] block truncate"
-          style={{ color: 'var(--sky)', fontFamily: 'monospace' }}
-          title="Your WeatherAI webhook endpoint"
-        >
-          {typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/backend/api/alerts/webhook
-        </code>
-        <p className="text-[9px] mt-1" style={{ color: 'var(--muted)' }}>
-          Paste into WeatherAI → Webhooks &amp; Alerts
-        </p>
-      </div>
     </div>
   );
 }
