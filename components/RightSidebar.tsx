@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import type { WeatherData, FarmState, DailyForecast, HourlyForecast, WeatherAlert, AlertSeverity } from '@/lib/types';
-import { wmoIcon, fmtTemp, fmtPrecip, isDaytime, dayName, localHour } from '@/lib/weather-utils';
+import { wmoIcon, fmtTemp, fmtPrecip, isDaytime, dayName, localHour, generateSummary } from '@/lib/weather-utils';
 
 interface Props {
   weatherData: WeatherData | null;
@@ -52,7 +52,7 @@ export default function RightSidebar({ weatherData, farmState, alerts, onDismiss
 
   const daily   = (weatherData?.daily  ?? []) as DailyForecast[];
   const hourly  = (weatherData?.hourly ?? []) as HourlyForecast[];
-  const ai      = weatherData?.ai_summary || weatherData?.summary;
+  const ai      = weatherData?.ai_summary || weatherData?.summary || (weatherData ? generateSummary(weatherData, farmState) : '');
   const isDay   = isDaytime(daily);
 
   // Hourly: next 24h
@@ -153,7 +153,7 @@ export default function RightSidebar({ weatherData, farmState, alerts, onDismiss
                   }}
                 >
                   <div className="text-[0.6rem] mb-1" style={{ color: 'var(--muted)' }}>
-                    {i === 0 ? 'Now' : localHour(h.time)}
+                    {i === 0 ? 'Sasa' : localHour(h.time)}
                   </div>
                   <div className="text-lg mb-0.5">{wmoIcon(h.condition_code, hIsDay)}</div>
                   <div className="text-xs font-bold" style={{ color: 'var(--text)' }}>
@@ -188,7 +188,7 @@ export default function RightSidebar({ weatherData, farmState, alerts, onDismiss
                     className="text-xs font-bold w-9 shrink-0"
                     style={{ color: isToday ? 'var(--green)' : 'var(--text2)' }}
                   >
-                    {isToday ? 'Today' : dayName(day.date)}
+                    {isToday ? 'Leo' : dayName(day.date)}
                   </span>
                   <span className="text-base shrink-0">{wmoIcon(day.condition_code, true)}</span>
                   <div className="flex-1 min-w-0" />

@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     days:  sp.get('days')  || '7',
     ai:    sp.get('ai')    || 'true',
     units: sp.get('units') || 'metric',
+    lang:  sp.get('lang')  || 'sw',
   };
 
   try {

@@ -21,27 +21,27 @@ export function wmoIcon(code: number, isDay = true): string {
 
 export function wmoText(code: number): string {
   const c = parseInt(String(code), 10);
-  if (c === 0)  return 'Clear sky';
-  if (c === 1)  return 'Mainly clear';
-  if (c === 2)  return 'Partly cloudy';
-  if (c === 3)  return 'Overcast';
-  if (c === 45 || c === 48) return 'Foggy';
-  if (c === 51) return 'Light drizzle';
-  if (c === 53) return 'Moderate drizzle';
-  if (c === 55) return 'Dense drizzle';
-  if (c === 61) return 'Slight rain';
-  if (c === 63) return 'Moderate rain';
-  if (c === 65) return 'Heavy rain';
-  if (c >= 71 && c <= 77) return 'Snow';
-  if (c >= 80 && c <= 82) return 'Rain showers';
-  if (c === 95) return 'Thunderstorm';
-  if (c === 96 || c === 99) return 'Thunderstorm with hail';
-  return 'Mixed conditions';
+  if (c === 0)               return 'Anga wazi';
+  if (c === 1)               return 'Anga wazi zaidi';
+  if (c === 2)               return 'Mawingu kidogo';
+  if (c === 3)               return 'Mawingu mengi';
+  if (c === 45 || c === 48)  return 'Ukungu';
+  if (c === 51)              return 'Mvua nyepesi sana';
+  if (c === 53)              return 'Mvua nyepesi';
+  if (c === 55)              return 'Mvua nyepesi nzito';
+  if (c === 61)              return 'Mvua kidogo';
+  if (c === 63)              return 'Mvua wastani';
+  if (c === 65)              return 'Mvua kubwa';
+  if (c >= 71 && c <= 77)    return 'Theluji';
+  if (c >= 80 && c <= 82)    return 'Manyunyu ya mvua';
+  if (c === 95)              return 'Dhoruba ya radi';
+  if (c === 96 || c === 99)  return 'Dhoruba na mvua ya mawe';
+  return 'Hali mchanganyiko';
 }
 
 export function degreesToCardinal(deg: number | null | undefined): string {
   if (deg == null) return '';
-  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const dirs = ['K', 'KS', 'S', 'KS', 'J', 'MJ', 'M', 'KM'];
   return dirs[Math.round(deg / 45) % 8];
 }
 
@@ -53,10 +53,12 @@ export function isDaytime(daily: DailyForecast[]): boolean {
   return now >= new Date(today.sunrise) && now <= new Date(today.sunset);
 }
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_NAMES = ['Jumapili', 'Jumatatu', 'Jumanne', 'Jumatano', 'Alhamisi', 'Ijumaa', 'Jumamosi'];
+const DAY_SHORT = ['Jpi', 'Jtt', 'Jwn', 'Jto', 'Alh', 'Iju', 'Jms'];
 
-export function dayName(dateStr: string): string {
-  return DAY_NAMES[new Date(dateStr + 'T12:00:00').getDay()];
+export function dayName(dateStr: string, short = true): string {
+  const idx = new Date(dateStr + 'T12:00:00').getDay();
+  return short ? DAY_SHORT[idx] : DAY_NAMES[idx];
 }
 
 export function localHour(isoStr: string): string {
@@ -91,6 +93,25 @@ const CROP_THRESHOLDS: Record<string, { heatC: number; frostC: number; windHigh:
   flowers:   { heatC: 28, frostC: 4, windHigh: 20, windCrit: 40, rainHighMm: 10, rainCritMm: 20 },
   general:   { heatC: 35, frostC: 3, windHigh: 35, windCrit: 60, rainHighMm: 20, rainCritMm: 40 },
 };
+
+// Swahili crop names
+const CROP_SW: Record<string, string> = {
+  general:   'mazao',
+  maize:     'mahindi',
+  tea:       'chai',
+  coffee:    'kahawa',
+  wheat:     'ngano',
+  rice:      'mchele',
+  beans:     'maharagwe',
+  tomatoes:  'nyanya',
+  potatoes:  'viazi',
+  sugarcane: 'miwa',
+  flowers:   'maua',
+};
+
+function cropSw(crop: string): string {
+  return CROP_SW[crop] || crop;
+}
 
 function riskLabel(score: number): 'low' | 'moderate' | 'high' | 'critical' {
   if (score >= 85) return 'critical';
@@ -128,49 +149,54 @@ export function computeRisks(daily: DailyForecast[], crop: string, units: 'metri
   else if (minTemp <= thr.frostC)     tempScore = Math.max(tempScore, 60 + 30 * (thr.frostC - minTemp) / 3);
 
   return {
-    rain: { score: rainScore, level: riskLabel(rainScore), detail: 'Peak: ' + fmtPrecip(maxPrecip, units) + ' · ' + maxPrecipP + '% chance' },
-    wind: { score: windScore, level: riskLabel(windScore), detail: 'Max: ' + fmtWind(maxWind, units) },
-    temp: { score: tempScore, level: riskLabel(tempScore), detail: 'High ' + fmtTemp(maxTemp, units) + ' · Low ' + fmtTemp(minTemp, units) },
+    rain: { score: rainScore, level: riskLabel(rainScore), detail: 'Kilele: ' + fmtPrecip(maxPrecip, units) + ' · uwezekano ' + maxPrecipP + '%' },
+    wind: { score: windScore, level: riskLabel(windScore), detail: 'Kasi kubwa: ' + fmtWind(maxWind, units) },
+    temp: { score: tempScore, level: riskLabel(tempScore), detail: 'Juu ' + fmtTemp(maxTemp, units) + ' · Chini ' + fmtTemp(minTemp, units) },
   };
 }
 
 export function buildRecommendations(risks: Risks, daily: DailyForecast[], crop: string): Recommendation[] {
-  const cropLabel = crop.charAt(0).toUpperCase() + crop.slice(1);
+  const sw  = cropSw(crop);
   const thr = CROP_THRESHOLDS[crop] || CROP_THRESHOLDS.general;
   const recs: Recommendation[] = [];
 
+  // ── Mvua (Rain) ────────────────────────────────────────────────────
   if (risks.rain.level === 'critical') {
-    recs.push({ cls: 'urgent', icon: '🚨', text: `Heavy rain forecast. Postpone all ground operations for ${cropLabel}. Inspect drainage channels and cover exposed seedbeds.` });
+    recs.push({ cls: 'urgent', icon: '🚨', text: `Mvua kubwa inatarajiwa. Simamisha kazi zote za shambani kwa ${sw}. Angalia mifereji ya maji na funika vitalu vilivyo wazi.` });
   } else if (risks.rain.level === 'high') {
-    recs.push({ cls: 'warning', icon: '⚠️', text: 'Significant rainfall expected. Delay fertiliser and pesticide application. Reinforce furrow drainage.' });
+    recs.push({ cls: 'warning', icon: '⚠️', text: 'Mvua kubwa inatarajiwa. Acha kunyunyizia mbolea na dawa. Imarisha mifereji ya mashamba.' });
   } else if (risks.rain.level === 'moderate') {
-    recs.push({ cls: 'caution', icon: '🌧', text: 'Moderate rain possible. Complete open-field tasks before the rain window.' });
+    recs.push({ cls: 'caution', icon: '🌧', text: 'Mvua wastani inawezekana. Kamilisha kazi za shambani kabla mvua haijanyesha.' });
   } else {
-    recs.push({ cls: 'good', icon: '✅', text: 'Rainfall risk is low — good conditions for irrigation scheduling and field operations.' });
+    recs.push({ cls: 'good', icon: '✅', text: 'Hatari ya mvua ni ndogo — hali nzuri kwa kupanga umwagiliaji na kazi za shambani.' });
   }
 
+  // ── Upepo (Wind) ───────────────────────────────────────────────────
   if (risks.wind.level === 'critical') {
-    recs.push({ cls: 'urgent', icon: '💨', text: `Dangerous wind speeds expected. Stake tall ${cropLabel} plants. Suspend all spray operations.` });
+    recs.push({ cls: 'urgent', icon: '💨', text: `Kasi ya upepo hatari inatarajiwa. Weka nguzo mimea mirefu ya ${sw}. Simamisha kazi zote za kunyunyizia.` });
   } else if (risks.wind.level === 'high') {
-    recs.push({ cls: 'warning', icon: '🌬', text: 'High winds forecast. Postpone aerial or spray work. Check trellising and shade nets.' });
+    recs.push({ cls: 'warning', icon: '🌬', text: 'Upepo mkali unatarajiwa. Ahirisha kazi za kunyunyizia angani. Angalia matrelisi na nyavu za kivuli.' });
   } else if (risks.wind.level === 'moderate') {
-    recs.push({ cls: 'caution', icon: '🍃', text: 'Moderate wind expected. Schedule spraying for early morning when air is calm.' });
+    recs.push({ cls: 'caution', icon: '🍃', text: 'Upepo wastani unatarajiwa. Panga kunyunyizia asubuhi mapema wakati hewa iko tulivu.' });
   }
 
+  // ── Joto / Baridi (Temperature) ────────────────────────────────────
   if (risks.temp.level === 'critical' || risks.temp.level === 'high') {
     const minT = daily.length ? Math.min(...daily.map(d => d.temp_min != null ? d.temp_min : 99)) : 99;
     if (minT <= thr.frostC) {
-      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning', icon: '❄️', text: `Frost risk for ${cropLabel}! Cover young plants overnight. Light irrigation before sunset raises soil temperature.` });
+      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning', icon: '❄️', text: `Hatari ya baridi kali kwa ${sw}! Funika mimea michanga usiku. Umwagilia kidogo kabla ya jua kuchwa ili kuinua joto la udongo.` });
     } else {
-      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning', icon: '🔥', text: `Elevated heat forecast. Increase irrigation frequency. Consider shade netting for ${cropLabel}.` });
+      recs.push({ cls: risks.temp.level === 'critical' ? 'urgent' : 'warning', icon: '🔥', text: `Joto kali linatarajiwa. Ongeza mara za kumwagilia. Fikiria kutumia nyavu za kivuli kwa ${sw}.` });
     }
   } else if (risks.temp.level === 'moderate') {
-    recs.push({ cls: 'caution', icon: '☀️', text: 'Warm conditions — monitor soil moisture closely and water in the early morning.' });
+    recs.push({ cls: 'caution', icon: '☀️', text: 'Hali ya joto — angalia unyevu wa udongo kwa makini na mwagilia asubuhi mapema.' });
   }
 
+  // ── Hali nzuri ─────────────────────────────────────────────────────
   if (risks.rain.level === 'low' && risks.wind.level === 'low' && risks.temp.level === 'low') {
-    recs.push({ cls: 'good', icon: '🌟', text: 'Excellent conditions across the board — ideal window for planting, transplanting, or top-dressing.' });
+    recs.push({ cls: 'good', icon: '🌟', text: 'Hali nzuri kabisa — wakati mzuri wa kupanda, kupandikiza, au kutia mbolea ya juu.' });
   }
+
   return recs;
 }
 
@@ -178,7 +204,7 @@ export function generateSummary(data: any, farmState: FarmState): string {
   const cur   = data.current  || {};
   const daily = data.daily    || [];
   const crop  = (farmState.crop || 'general').toLowerCase();
-  const name  = farmState.name || 'Your farm';
+  const name  = farmState.name || 'Shamba lako';
   if (!daily.length) return '';
 
   const today   = daily[0] || {};
@@ -186,39 +212,47 @@ export function generateSummary(data: any, farmState: FarmState): string {
   const tempMin = today.temp_min  != null ? Math.round(today.temp_min)  : '—';
   const curTemp = cur.temperature != null ? Math.round(cur.temperature) : tempMax;
   const condText = wmoText(cur.condition_code || today.condition_code || 0);
+  const sw       = cropSw(crop);
 
   const rainyDays = daily.filter((d: any) => d.precipitation_sum > 1 || d.precipitation_probability > 50).length;
   const peakRain  = daily.reduce((a: any, b: any) => (b.precipitation_sum || 0) > (a.precipitation_sum || 0) ? b : a, daily[0]);
   const windyDay  = daily.reduce((a: any, b: any) => (b.wind_max || 0) > (a.wind_max || 0) ? b : a, daily[0]);
 
   const outlook = rainyDays === 0
-    ? 'The next 7 days look predominantly dry with minimal rainfall expected.'
+    ? 'Siku 7 zijazo zinaonekana kuwa kavu bila mvua inayotarajiwa.'
     : rainyDays <= 2
-    ? `Mostly dry conditions ahead with ${rainyDays} day(s) of light rain in the forecast.`
+    ? `Hali kavu zaidi inatarajiwa na siku ${rainyDays} za mvua ndogo katika utabiri.`
     : rainyDays <= 4
-    ? `${rainyDays} out of 7 days show rain activity — a mixed week ahead.`
-    : `A predominantly wet week is expected with rain on ${rainyDays} of the next 7 days.`;
+    ? `Siku ${rainyDays} kati ya 7 zinaonyesha shughuli za mvua — wiki yenye hali mchanganyiko.`
+    : `Wiki yenye mvua nyingi inatarajiwa na mvua siku ${rainyDays} kati ya 7 zijazo.`;
 
   let rainNote = '';
   if (peakRain.precipitation_sum > 5) {
-    const peakDate = new Date(peakRain.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    rainNote = ` The heaviest rainfall (${peakRain.precipitation_sum.toFixed(1)} mm) is expected on ${peakDate}.`;
+    const peakDate = new Date(peakRain.date + 'T12:00:00').toLocaleDateString('sw-KE', { weekday: 'long', day: 'numeric', month: 'short' });
+    rainNote = ` Mvua kubwa zaidi (mm ${peakRain.precipitation_sum.toFixed(1)}) inatarajiwa ${peakDate}.`;
   }
 
   let windNote = '';
-  if (windyDay.wind_max > 30)       windNote = ` Strong winds peaking at ${windyDay.wind_max} km/h are expected — secure any structures or shade nets.`;
-  else if (windyDay.wind_max > 20)  windNote = ` Moderate wind gusts up to ${windyDay.wind_max} km/h are forecast.`;
+  if (windyDay.wind_max > 30)      windNote = ` Upepo mkali unaofika ${windyDay.wind_max} km/h unatarajiwa — hakikisha miundo na nyavu za kivuli.`;
+  else if (windyDay.wind_max > 20) windNote = ` Upepo wa wastani hadi ${windyDay.wind_max} km/h umetabiriwa.`;
 
   let cropNote = '';
   if (crop === 'tea' || crop === 'coffee') {
-    cropNote = ` Cooler nights (low ${tempMin}°C) are favorable for ${crop} quality.`;
+    cropNote = ` Usiku wa baridi (chini ${tempMin}°C) ni mzuri kwa ubora wa ${sw}.`;
   } else if (crop === 'maize' || crop === 'wheat' || crop === 'rice') {
-    cropNote = rainyDays >= 3 ? ` Adequate moisture should support ${crop} development this week.` : ` Monitor soil moisture closely — irrigation may be needed for ${crop}.`;
+    cropNote = rainyDays >= 3
+      ? ` Unyevu wa kutosha unatarajiwa kusaidia ukuaji wa ${sw} wiki hii.`
+      : ` Angalia unyevu wa udongo — umwagiliaji unaweza kuhitajika kwa ${sw}.`;
   } else if (crop === 'tomatoes' || crop === 'potatoes') {
-    cropNote = today.temp_max > 32 ? ` High temperatures may stress ${crop} — consider afternoon shading.` : ` Temperatures look manageable for ${crop} growth this week.`;
+    cropNote = today.temp_max > 32
+      ? ` Joto kali linaweza kudhuru ${sw} — fikiria kivuli cha mchana.`
+      : ` Joto linaonekana kuwa sawa kwa ukuaji wa ${sw} wiki hii.`;
   } else {
-    cropNote = ` Overall conditions are ${rainyDays <= 2 ? 'favorable' : 'mixed'} for field operations.`;
+    cropNote = ` Hali kwa ujumla ni ${rainyDays <= 2 ? 'nzuri' : 'yenye msongo'} kwa shughuli za shambani.`;
   }
 
-  return `${name} is currently experiencing ${condText.toLowerCase()} at ${curTemp}°C (high ${tempMax}°C, low ${tempMin}°C). ${outlook}${rainNote}${windNote}${cropNote}`;
+  return `${name} kwa sasa ina ${condText.toLowerCase()} kwa joto la ${curTemp}°C (juu ${tempMax}°C, chini ${tempMin}°C). ${outlook}${rainNote}${windNote}${cropNote}`;
 }
+
+// Re-export for backwards compatibility
+export { CROP_THRESHOLDS };

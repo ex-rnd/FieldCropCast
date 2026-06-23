@@ -88,7 +88,7 @@ export default function Page() {
     else         setRefreshing(true);
 
     try {
-      const url  = `/frontend/ui/weather?lat=${state.lat}&lon=${state.lon}&days=7&units=${state.units}&ai=true`;
+      const url  = `/frontend/ui/weather?lat=${state.lat}&lon=${state.lon}&days=7&units=${state.units}&ai=true&lang=sw`;
       const res  = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
