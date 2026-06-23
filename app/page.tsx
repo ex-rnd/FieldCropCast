@@ -193,6 +193,7 @@ export default function Page() {
           autoRefreshMs={uiConfig?.autoRefreshMs ?? 180_000}
           crops={uiConfig?.crops}
           units={uiConfig?.units}
+          usageData={usageData}
         />
 
         {/* Center: Crop selector + Recommendations + Conditions */}

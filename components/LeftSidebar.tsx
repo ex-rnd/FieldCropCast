@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { WeatherData, FarmState, DailyForecast, HourlyForecast } from '@/lib/types';
+import type { WeatherData, FarmState, DailyForecast, HourlyForecast, UsageData } from '@/lib/types';
 import {
   wmoIcon, wmoText, fmtTemp, fmtWind, fmtPrecip,
   isDaytime, degreesToCardinal,
@@ -18,6 +18,7 @@ interface Props {
   autoRefreshMs: number;
   crops?: { value: string; label: string }[];
   units?: { value: string; label: string }[];
+  usageData?: UsageData | null;
 }
 
 const DEFAULT_UNITS = [
@@ -208,13 +209,14 @@ function useCountdown(lastUpdated: Date | null, autoRefreshMs: number) {
 }
 
 // ── Weather summary (data loaded) ─────────────────────────────────────
-function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, isRefreshing, onEdit }: {
+function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, isRefreshing, onEdit, usageData }: {
   farmState: FarmState;
   weatherData: WeatherData;
   lastUpdated: Date | null;
   autoRefreshMs: number;
   isRefreshing: boolean;
   onEdit: () => void;
+  usageData?: UsageData | null;
 }) {
   const { countdown, pct } = useCountdown(lastUpdated, autoRefreshMs);
   const daily   = (weatherData.daily  ?? []) as DailyForecast[];
@@ -360,6 +362,90 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
           </div>
         )}
       </div>
+
+      {/* ── AI Quota ───────────────────────────────────────────────── */}
+      {usageData && (usageData.limits?.aiRequests != null || usageData.limits?.requests != null) && (() => {
+        const aiLimit     = usageData.limits?.aiRequests ?? 0;
+        const aiRemaining = usageData.remaining?.aiRequests ?? (aiLimit - (usageData.period?.aiRequestCount ?? 0));
+        const aiUsed      = aiLimit - aiRemaining;
+        const aiPct       = aiLimit > 0 ? Math.round((aiRemaining / aiLimit) * 100) : 0;
+
+        const reqLimit     = usageData.limits?.requests ?? 0;
+        const reqRemaining = usageData.remaining?.requests ?? (reqLimit - (usageData.period?.requestCount ?? 0));
+        const reqPct       = reqLimit > 0 ? Math.round((reqRemaining / reqLimit) * 100) : 0;
+
+        const periodEnd = usageData.period?.end
+          ? new Date(usageData.period.end).toLocaleDateString('sw-KE', { day: 'numeric', month: 'short', year: 'numeric' })
+          : null;
+
+        const barColor = (pct: number) =>
+          pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--amber)' : 'var(--risk-crit)';
+
+        return (
+          <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center gap-1.5 mb-3">
+              <span style={{ fontSize: 11 }}>✨</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                Hisa ya AI
+              </span>
+              {usageData.plan && (
+                <span
+                  className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+                  style={{ background: 'rgba(74,222,128,.12)', color: 'var(--green)', border: '1px solid rgba(74,222,128,.25)' }}
+                >
+                  {usageData.plan}
+                </span>
+              )}
+            </div>
+
+            {/* AI Requests */}
+            {aiLimit > 0 && (
+              <div className="mb-2.5">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px]" style={{ color: 'var(--text2)' }}>Maombi ya AI</span>
+                  <span className="text-[10px] font-mono font-bold" style={{ color: barColor(aiPct) }}>
+                    {aiRemaining.toLocaleString()} / {aiLimit.toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: aiPct + '%', background: barColor(aiPct) }}
+                  />
+                </div>
+                <div className="flex justify-between mt-0.5">
+                  <span className="text-[9px]" style={{ color: 'var(--muted)' }}>{aiUsed.toLocaleString()} zimetumika</span>
+                  <span className="text-[9px]" style={{ color: 'var(--muted)' }}>{aiPct}% zimebaki</span>
+                </div>
+              </div>
+            )}
+
+            {/* Total Requests */}
+            {reqLimit > 0 && (
+              <div className="mb-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px]" style={{ color: 'var(--text2)' }}>Maombi Jumla</span>
+                  <span className="text-[10px] font-mono font-bold" style={{ color: barColor(reqPct) }}>
+                    {reqRemaining.toLocaleString()} / {reqLimit.toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: reqPct + '%', background: barColor(reqPct) }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {periodEnd && (
+              <div className="text-[9px] mt-1" style={{ color: 'var(--muted)' }}>
+                Kipindi kinaisha {periodEnd}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -368,7 +454,7 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
 export default function LeftSidebar({
   farmState, onChange, onAnalyze, weatherData,
   isFetching, isRefreshing, lastUpdated, autoRefreshMs,
-  crops, units,
+  crops, units, usageData,
 }: Props) {
   const [editMode, setEditMode] = useState(false);
   const showForm = !weatherData || editMode;
@@ -393,6 +479,7 @@ export default function LeftSidebar({
           autoRefreshMs={autoRefreshMs}
           isRefreshing={isRefreshing}
           onEdit={() => setEditMode(true)}
+          usageData={usageData}
         />
       )}
     </aside>
