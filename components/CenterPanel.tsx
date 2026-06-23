@@ -411,19 +411,23 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
         <section>
           <SectionHead icon="🌡" title="Current Conditions" />
           {weatherData ? (
-            <div className="grid gap-3 fade-in" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <div className="flex gap-2 overflow-x-auto pb-1 fade-in" style={{ scrollbarWidth: 'none' }}>
               {[
-                { icon: '💧', val: curHour.humidity != null ? curHour.humidity + '%' : '—',          lbl: 'Humidity'    },
-                { icon: '💨', val: cur.wind_speed != null ? fmtWind(cur.wind_speed, farmState.units) + (windDir ? ' ' + windDir : '') : '—', lbl: 'Wind Speed' },
-                { icon: '☀️', val: `${uvIdx} — ${uvLbl}`,                                            lbl: 'UV Index'    },
-                { icon: '🌧', val: daily[0] ? fmtPrecip(daily[0].precipitation_sum, farmState.units) : '—', lbl: "Precip Today" },
+                { icon: '🌧', val: daily[0] ? fmtPrecip(daily[0].precipitation_sum, farmState.units) : '—', lbl: 'Rain Today'  },
                 { icon: '🌡', val: curHour.feels_like != null ? fmtTemp(curHour.feels_like, farmState.units) : '—', lbl: 'Feels Like' },
+                { icon: '☀️', val: `${uvIdx} · ${uvLbl}`,                                                    lbl: 'UV Index'   },
                 { icon: '🌬', val: curHour.precipitation_probability != null ? curHour.precipitation_probability + '%' : '—', lbl: 'Rain Chance' },
+                { icon: '💧', val: curHour.humidity != null ? curHour.humidity + '%' : '—',                  lbl: 'Humidity'   },
+                { icon: '💨', val: cur.wind_speed != null ? fmtWind(cur.wind_speed, farmState.units) + (windDir ? ' ' + windDir : '') : '—', lbl: 'Wind' },
               ].map(m => (
-                <div key={m.lbl} className="metric-card">
-                  <div style={{ fontSize: 22, marginBottom: 6 }}>{m.icon}</div>
-                  <div className="text-lg font-black" style={{ color: 'var(--text)' }}>{m.val}</div>
-                  <div className="text-[10px] uppercase tracking-wider mt-1" style={{ color: 'var(--muted)' }}>{m.lbl}</div>
+                <div
+                  key={m.lbl}
+                  className="flex-none flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: 72 }}
+                >
+                  <span style={{ fontSize: 16 }}>{m.icon}</span>
+                  <span className="text-xs font-bold leading-tight text-center" style={{ color: 'var(--text)' }}>{m.val}</span>
+                  <span className="text-[9px] uppercase tracking-wider text-center" style={{ color: 'var(--muted)' }}>{m.lbl}</span>
                 </div>
               ))}
             </div>
