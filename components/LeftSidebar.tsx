@@ -72,7 +72,7 @@ function SetupForm({ farmState, onChange, onAnalyze, isFetching, units, onCancel
       </div>
 
       <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
-        Enter your farm details to get a personalised 7-day forecast and crop risk analysis.
+        Tell us about your farm and we'll deliver a real-time 7-day forecast, crop-specific risk alerts, and field-level recommendations — tailored to your location and what you're growing.
       </p>
 
       <div className="h-px" style={{ background: 'var(--border)' }} />
@@ -91,12 +91,23 @@ function SetupForm({ farmState, onChange, onAnalyze, isFetching, units, onCancel
       {/* County */}
       <div className="flex flex-col gap-1">
         <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>County / Region</label>
-        <input
+        <select
           className="form-input"
-          placeholder="e.g. Bomet, Kenya"
           value={farmState.county}
           onChange={upd('county')}
-        />
+          style={{ cursor: 'pointer' }}
+        >
+          <option value="">— Select county —</option>
+          {[
+            'Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa',
+            'Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi',
+            'Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos',
+            'Makueni','Mandera','Marsabit','Meru','Migori','Mombasa','Murang\'a',
+            'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri',
+            'Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans Nzoia',
+            'Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot',
+          ].map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
       {/* Lat / Lon + Geolocation */}
@@ -161,7 +172,7 @@ function SetupForm({ farmState, onChange, onAnalyze, isFetching, units, onCancel
             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
             </svg>
-            Analyse Farm
+            Analyze Farm
           </>
         )}
       </button>
