@@ -42,6 +42,11 @@ export default function Page() {
     const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
     setTheme((saved as 'dark' | 'light') || preferred);
 
+    const savedFarm = localStorage.getItem('fc-farm');
+    if (savedFarm) {
+      try { setFarmState(f => ({ ...DEFAULT_FARM, ...f, ...JSON.parse(savedFarm) })); } catch {}
+    }
+
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         pos => setFarmState(p => ({
@@ -149,6 +154,7 @@ export default function Page() {
     if (isNaN(lat) || lat < -90  || lat > 90)   { showError('Enter a valid latitude (−90 to 90).');   return; }
     if (isNaN(lon) || lon < -180 || lon > 180)  { showError('Enter a valid longitude (−180 to 180).'); return; }
     setFarmState(state);
+    localStorage.setItem('fc-farm', JSON.stringify(state));
     fetchWeather(state);
   }, [fetchWeather, showError]);
 
@@ -160,7 +166,20 @@ export default function Page() {
 
   // ── Crop change (no re-fetch — recommendations re-compute locally) ────
   const handleCropChange = useCallback((crop: string) => {
-    setFarmState(s => ({ ...s, crop }));
+    setFarmState(s => {
+      const next = { ...s, crop, cropVariety: undefined };
+      localStorage.setItem('fc-farm', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // ── Crop details change ───────────────────────────────────────────────
+  const handleFarmStateChange = useCallback((updates: Partial<FarmState>) => {
+    setFarmState(s => {
+      const next = { ...s, ...updates };
+      localStorage.setItem('fc-farm', JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   // ── Render ────────────────────────────────────────────────────────────
@@ -201,6 +220,7 @@ export default function Page() {
           farmState={farmState}
           weatherData={weatherData}
           onCropChange={handleCropChange}
+          onFarmStateChange={handleFarmStateChange}
           isFetching={isFetching}
         />
 

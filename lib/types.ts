@@ -52,6 +52,21 @@ export interface FarmState {
   lon: string;
   crop: string;
   units: 'metric' | 'imperial';
+  plantingDate?: string;
+  farmSize?: string;
+  irrigationType?: 'rain_fed' | 'irrigated';
+  soilType?: string;
+  cropVariety?: string;
+}
+
+export interface CropStageResult {
+  name: string;
+  nameSw: string;
+  icon: string;
+  daysAfterPlanting: number;
+  totalDays: number;
+  pct: number;
+  isPerennial: boolean;
 }
 
 export type RiskLevel = 'low' | 'moderate' | 'high' | 'critical';

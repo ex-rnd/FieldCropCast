@@ -1,4 +1,4 @@
-import type { DailyForecast, FarmState, Risks, Recommendation } from './types';
+import type { DailyForecast, FarmState, Risks, Recommendation, CropStageResult } from './types';
 
 export function wmoIcon(code: number, isDay = true): string {
   const c = parseInt(String(code), 10);
@@ -508,6 +508,247 @@ export function generateSummaryEn(data: any, farmState: FarmState): string {
   }
 
   return `${greeting}${addressee}! ${currentDesc} ${weekOutlook}${rainNote}${windNote}${cropNote}`;
+}
+
+// ── Crop Details UI data ───────────────────────────────────────────────────
+
+export const FARM_SIZES = ['< 1 acre', '1–2 acres', '2–5 acres', '5–10 acres', '> 10 acres'];
+
+export const SOIL_TYPES = ['Loam', 'Clay loam', 'Sandy loam', 'Black cotton', 'Volcanic', 'Sandy'];
+
+export const CROP_VARIETIES: Record<string, string[]> = {
+  maize:      ['H614D', 'H6213', 'DK8031', 'Pioneer 3253', 'SC403', 'DUMA 43'],
+  beans:      ['Rose Coco', 'Mwitemania', 'GLP2', 'Lyamungu 85', 'Black Beans'],
+  potatoes:   ['Shangi', 'Dutch Robijn', 'Kenya Karibu', 'Tigoni', 'Asante'],
+  tomatoes:   ['Cal J', 'Rambo F1', 'Anna F1', 'Tylka F1', 'Rio Grande'],
+  tea:        ['TRFK 303/577', 'TRFK 6/8', 'AHP S15/10', 'Purple Tea'],
+  coffee:     ['Ruiru 11', 'Batian', 'K7', 'SL28', 'SL34'],
+  wheat:      ['Eagle10', 'Kenya Fahari', 'Robin', 'Kenya Swara', 'Njoro BW II'],
+  rice:       ['Basmati 370', 'NERICA 4', 'BW196', 'IR2793'],
+  sugarcane:  ['CO421', 'EAI90-3', 'N14', 'N52'],
+  bananas:    ['Williams', 'Grand Naine', 'Dwarf Cavendish', 'Kisubi', 'Gros Michel'],
+  sorghum:    ['Serena', 'Gadam', 'KSV8', 'E1291'],
+  cassava:    ['MM96/4271', 'Mkombozi', 'Tajirika', 'Kibanda Meno'],
+  greengrams: ['N26', 'KS20', 'SY Quanza', 'S69'],
+  cowpeas:    ['K80', 'Machakos 66', 'KVU27-1', 'M66'],
+  mangoes:    ['Apple', 'Tommy Atkins', 'Kent', 'Ngowe', 'Keitt', 'Van Dyke'],
+};
+
+// ── Crop stage durations (Kenya-calibrated, days after planting) ───────────
+
+const PERENNIAL_CROPS = new Set(['tea', 'coffee', 'bananas', 'sugarcane', 'mangoes']);
+
+interface StageRange { name: string; nameSw: string; icon: string; from: number; to: number }
+
+const CROP_STAGE_DURATIONS: Record<string, StageRange[]> = {
+  maize: [
+    { name: 'Emergence',    nameSw: 'Kuota',          icon: '🌱', from: 0,   to: 14  },
+    { name: 'Vegetative',   nameSw: 'Ukuaji',         icon: '🌿', from: 15,  to: 45  },
+    { name: 'Tasseling',    nameSw: 'Kutoa Tasseli',  icon: '🌽', from: 46,  to: 65  },
+    { name: 'Grain Fill',   nameSw: 'Kujaza Nafaka',  icon: '🌾', from: 66,  to: 90  },
+    { name: 'Maturity',     nameSw: 'Kuiva',          icon: '✅', from: 91,  to: 120 },
+    { name: 'Harvest',      nameSw: 'Mavuno',         icon: '🚜', from: 121, to: 999 },
+  ],
+  beans: [
+    { name: 'Emergence',    nameSw: 'Kuota',          icon: '🌱', from: 0,   to: 10  },
+    { name: 'Vegetative',   nameSw: 'Ukuaji',         icon: '🌿', from: 11,  to: 35  },
+    { name: 'Flowering',    nameSw: 'Kutoa Maua',     icon: '🌸', from: 36,  to: 55  },
+    { name: 'Pod Fill',     nameSw: 'Kujaza Maganda', icon: '🫘', from: 56,  to: 75  },
+    { name: 'Maturity',     nameSw: 'Kuiva',          icon: '✅', from: 76,  to: 90  },
+    { name: 'Harvest',      nameSw: 'Mavuno',         icon: '🚜', from: 91,  to: 999 },
+  ],
+  potatoes: [
+    { name: 'Emergence',         nameSw: 'Kuota',           icon: '🌱', from: 0,   to: 21  },
+    { name: 'Vegetative',        nameSw: 'Ukuaji',          icon: '🌿', from: 22,  to: 45  },
+    { name: 'Tuber Initiation',  nameSw: 'Kuanza kwa Viazi',icon: '🥔', from: 46,  to: 70  },
+    { name: 'Tuber Bulking',     nameSw: 'Kukua kwa Viazi', icon: '🥔', from: 71,  to: 95  },
+    { name: 'Maturity',          nameSw: 'Kuiva',           icon: '✅', from: 96,  to: 120 },
+    { name: 'Harvest',           nameSw: 'Mavuno',          icon: '🚜', from: 121, to: 999 },
+  ],
+  tomatoes: [
+    { name: 'Establishment', nameSw: 'Kuimarika',     icon: '🌱', from: 0,  to: 14  },
+    { name: 'Vegetative',    nameSw: 'Ukuaji',        icon: '🌿', from: 15, to: 35  },
+    { name: 'Flowering',     nameSw: 'Kutoa Maua',    icon: '🌸', from: 36, to: 60  },
+    { name: 'Fruit Dev.',    nameSw: 'Ukuaji wa Tunda',icon: '🍅', from: 61, to: 85  },
+    { name: 'Harvest',       nameSw: 'Mavuno',        icon: '🚜', from: 86, to: 999 },
+  ],
+  wheat: [
+    { name: 'Emergence',  nameSw: 'Kuota',        icon: '🌱', from: 0,   to: 14  },
+    { name: 'Tillering',  nameSw: 'Matawi',       icon: '🌿', from: 15,  to: 40  },
+    { name: 'Booting',    nameSw: 'Kufunika',     icon: '🌾', from: 41,  to: 65  },
+    { name: 'Heading',    nameSw: 'Kutoa Kichwa', icon: '🌾', from: 66,  to: 80  },
+    { name: 'Maturity',   nameSw: 'Kuiva',        icon: '✅', from: 81,  to: 110 },
+    { name: 'Harvest',    nameSw: 'Mavuno',       icon: '🚜', from: 111, to: 999 },
+  ],
+  rice: [
+    { name: 'Seedling',      nameSw: 'Miche',          icon: '🌱', from: 0,   to: 21  },
+    { name: 'Tillering',     nameSw: 'Matawi',         icon: '🌿', from: 22,  to: 50  },
+    { name: 'Panicle Init.', nameSw: 'Kuanza Pamoja',  icon: '🌾', from: 51,  to: 70  },
+    { name: 'Flowering',     nameSw: 'Kutoa Maua',     icon: '🌸', from: 71,  to: 85  },
+    { name: 'Maturity',      nameSw: 'Kuiva',          icon: '✅', from: 86,  to: 120 },
+    { name: 'Harvest',       nameSw: 'Mavuno',         icon: '🚜', from: 121, to: 999 },
+  ],
+  sorghum: [
+    { name: 'Emergence', nameSw: 'Kuota',        icon: '🌱', from: 0,   to: 14  },
+    { name: 'Vegetative',nameSw: 'Ukuaji',       icon: '🌿', from: 15,  to: 45  },
+    { name: 'Booting',   nameSw: 'Kufunika',     icon: '🌾', from: 46,  to: 65  },
+    { name: 'Heading',   nameSw: 'Kutoa Kichwa', icon: '🌾', from: 66,  to: 80  },
+    { name: 'Maturity',  nameSw: 'Kuiva',        icon: '✅', from: 81,  to: 110 },
+    { name: 'Harvest',   nameSw: 'Mavuno',       icon: '🚜', from: 111, to: 999 },
+  ],
+  cassava: [
+    { name: 'Establishment', nameSw: 'Kuimarika',     icon: '🌱', from: 0,   to: 30  },
+    { name: 'Vegetative',    nameSw: 'Ukuaji',        icon: '🌿', from: 31,  to: 90  },
+    { name: 'Tuber Init.',   nameSw: 'Kuanza Mizizi', icon: '🥬', from: 91,  to: 180 },
+    { name: 'Tuber Bulking', nameSw: 'Kukua Mizizi',  icon: '🥬', from: 181, to: 270 },
+    { name: 'Maturity',      nameSw: 'Kuiva',         icon: '✅', from: 271, to: 360 },
+    { name: 'Harvest',       nameSw: 'Mavuno',        icon: '🚜', from: 361, to: 999 },
+  ],
+  greengrams: [
+    { name: 'Emergence', nameSw: 'Kuota',          icon: '🌱', from: 0,  to: 10  },
+    { name: 'Vegetative',nameSw: 'Ukuaji',         icon: '🌿', from: 11, to: 30  },
+    { name: 'Flowering', nameSw: 'Kutoa Maua',     icon: '🌸', from: 31, to: 50  },
+    { name: 'Pod Fill',  nameSw: 'Kujaza Maganda', icon: '🫛', from: 51, to: 65  },
+    { name: 'Maturity',  nameSw: 'Kuiva',          icon: '✅', from: 66, to: 80  },
+    { name: 'Harvest',   nameSw: 'Mavuno',         icon: '🚜', from: 81, to: 999 },
+  ],
+  cowpeas: [
+    { name: 'Emergence', nameSw: 'Kuota',          icon: '🌱', from: 0,  to: 10  },
+    { name: 'Vegetative',nameSw: 'Ukuaji',         icon: '🌿', from: 11, to: 30  },
+    { name: 'Flowering', nameSw: 'Kutoa Maua',     icon: '🌸', from: 31, to: 50  },
+    { name: 'Pod Fill',  nameSw: 'Kujaza Maganda', icon: '🌿', from: 51, to: 65  },
+    { name: 'Maturity',  nameSw: 'Kuiva',          icon: '✅', from: 66, to: 80  },
+    { name: 'Harvest',   nameSw: 'Mavuno',         icon: '🚜', from: 81, to: 999 },
+  ],
+};
+
+export function estimateCropStage(crop: string, plantingDate: string): CropStageResult {
+  const dap = Math.floor((Date.now() - new Date(plantingDate).getTime()) / 86_400_000);
+
+  if (PERENNIAL_CROPS.has(crop)) {
+    return { name: 'Established Perennial', nameSw: 'Zao la Kudumu', icon: '🌳', daysAfterPlanting: dap, totalDays: 0, pct: 100, isPerennial: true };
+  }
+
+  const stages = CROP_STAGE_DURATIONS[crop] || CROP_STAGE_DURATIONS.maize;
+  const allButLast = stages.slice(0, -1);
+  const totalDays = allButLast[allButLast.length - 1]?.to ?? 120;
+
+  const stage = stages.find(s => dap >= s.from && dap <= s.to) ?? stages[stages.length - 1];
+  const pct = Math.min(100, Math.round((dap / totalDays) * 100));
+
+  return { name: stage.name, nameSw: stage.nameSw, icon: stage.icon, daysAfterPlanting: Math.max(0, dap), totalDays, pct, isPerennial: false };
+}
+
+export function buildStageAdvice(stage: CropStageResult, risks: Risks, crop: string, irrigationType?: string): Recommendation[] {
+  const recs: Recommendation[] = [];
+  const n = stage.name;
+  const isWet  = risks.rain.level === 'high' || risks.rain.level === 'critical';
+  const isHot  = risks.temp.level === 'high' || risks.temp.level === 'critical';
+  const isWindy = risks.wind.level === 'high' || risks.wind.level === 'critical';
+  const irrigated = irrigationType === 'irrigated';
+
+  if (stage.isPerennial) {
+    const month = new Date().getMonth();
+    if (crop === 'coffee') {
+      if (month >= 2 && month <= 4) recs.push({ cls: 'good',    icon: '☕', text: 'Coffee flowering season — ensure adequate soil moisture and avoid any spraying that could affect flower set.' });
+      else if (month >= 5 && month <= 8) recs.push({ cls: 'good', icon: '☕', text: 'Coffee berry development — maintain consistent moisture. This is a critical period for bean size and quality.' });
+      else recs.push({ cls: 'good', icon: '☕', text: 'Good time to top-dress with CAN fertiliser if rains are reliable. Scout for coffee berry disease (CBD) regularly.' });
+    } else if (crop === 'tea') {
+      if (isWet) recs.push({ cls: 'caution', icon: '🍵', text: 'Wet conditions can accelerate flush growth but increase risk of blister blight. Monitor closely and spray preventatively if needed.' });
+      else recs.push({ cls: 'good', icon: '🍵', text: 'Plan plucking rounds to match 7–10 day intervals. Dry spells may slow flush — adjust rounds accordingly.' });
+    } else if (crop === 'bananas') {
+      recs.push({ cls: isWindy ? 'warning' : 'good', icon: '🍌', text: isWindy ? 'Support banana stems bearing bunches before wind arrives — use props or ties to prevent toppling.' : 'Check bunch development. Apply potassium-rich fertiliser if plants are in active bunch-filling phase.' });
+    } else if (crop === 'mangoes') {
+      if (month >= 6 && month <= 8) recs.push({ cls: 'good',    icon: '🥭', text: 'Dry season — ideal for mango flowering induction. Withhold irrigation for 4–6 weeks to stress-trigger flowering.' });
+      else if (isWet)               recs.push({ cls: 'caution', icon: '🥭', text: 'Warm wet weather increases anthracnose risk. Apply copper-based fungicide and ensure good canopy airflow.' });
+      else                           recs.push({ cls: 'good',    icon: '🥭', text: 'Monitor fruit development and pest pressure. Thin fruits if bunches are overly heavy.' });
+    } else {
+      recs.push({ cls: 'good', icon: '🌳', text: 'Established crop — focus on maintenance: fertilising, pruning, and pest monitoring according to your usual schedule.' });
+    }
+    return recs;
+  }
+
+  // ── Annuals: stage-specific advice ──────────────────────────────────
+  if (crop === 'potatoes') {
+    if (n === 'Emergence') {
+      recs.push({ cls: 'good', icon: '🥔', text: 'Young shoots emerging — ensure ridges are well-formed and soil is moist but not waterlogged.' });
+      if (isWet) recs.push({ cls: 'caution', icon: '🌧', text: 'Excess moisture at emergence can cause seed piece rot. Check drainage and avoid compaction on ridges.' });
+    } else if (n === 'Tuber Initiation') {
+      if (isWet) recs.push({ cls: 'warning', icon: '⚠️', text: 'Scout for late blight (Phytophthora) now — wet conditions are ideal for infection. Spray copper-based fungicide during the next dry, low-wind window.' });
+      recs.push({ cls: 'caution', icon: '🌧', text: 'Avoid overhead irrigation at this stage — use furrow or drip to reduce leaf wetness and blight pressure.' });
+      if (isHot) recs.push({ cls: 'warning', icon: '🔥', text: 'High temperatures can inhibit tuber initiation. Irrigate to cool the soil and reduce heat stress.' });
+    } else if (n === 'Tuber Bulking') {
+      recs.push({ cls: 'good', icon: '💧', text: 'Consistent moisture is critical during bulking — any water stress now directly reduces final tuber size.' });
+      if (isWet) recs.push({ cls: 'warning', icon: '⚠️', text: 'Continue blight monitoring and spraying every 7–10 days in wet weather. Stop irrigation if soil is already saturated.' });
+    } else if (n === 'Maturity') {
+      recs.push({ cls: 'good', icon: '✅', text: 'Reduce irrigation now to allow skins to set. Harvest when foliage has fully died back and skins are firm.' });
+      if (isWet) recs.push({ cls: 'caution', icon: '🌧', text: 'Delay harvest if soils are very wet — harvest wounds in wet soils increase disease entry and storage losses.' });
+    }
+  } else if (crop === 'maize') {
+    if (n === 'Tasseling') {
+      recs.push({ cls: 'urgent', icon: '🌽', text: 'Critical pollination window — any moisture stress now directly reduces grain number and final yield.' });
+      if (!irrigated) recs.push({ cls: 'warning', icon: '💧', text: 'Rain-fed: if rainfall this week is below 25mm, yield loss is likely. Consider emergency irrigation if any water source is available.' });
+      if (irrigated)  recs.push({ cls: 'good',    icon: '💧', text: 'Irrigate to field capacity every 5–7 days during tasseling and silking. Morning irrigation before 9am is most effective.' });
+      if (isHot)      recs.push({ cls: 'warning', icon: '🔥', text: 'Heat during pollination causes pollen sterility. There is little you can do — ensure soil moisture is maximised.' });
+    } else if (n === 'Grain Fill') {
+      recs.push({ cls: 'good', icon: '🌾', text: 'Grain fill is underway — maintain moisture and monitor for fall armyworm and stalk borers which peak at this stage.' });
+      if (isWet) recs.push({ cls: 'caution', icon: '🌧', text: 'High humidity increases grey leaf spot and northern leaf blight risk. Scout upper leaves and act if lesions appear.' });
+    } else if (n === 'Maturity') {
+      if (isWet) recs.push({ cls: 'caution', icon: '🌧', text: 'Delay harvest if rains continue — damp cobs are prone to aflatoxin. Dry to 13% moisture before storage.' });
+      else       recs.push({ cls: 'good',    icon: '✅', text: 'Maize approaching harvest. Check cobs for complete black layer formation before harvesting.' });
+    }
+  } else if (crop === 'beans') {
+    if (n === 'Flowering') {
+      if (isWindy) recs.push({ cls: 'warning', icon: '💨', text: 'Wind during flowering can knock flowers off before pod set. Avoid any agitation of plants and hold off spraying until calm.' });
+      if (isHot)   recs.push({ cls: 'warning', icon: '🔥', text: 'Temperatures above 32°C during flowering cause pollen sterility and poor pod set. Irrigate if possible to lower canopy temperature.' });
+      if (isWet)   recs.push({ cls: 'caution', icon: '🌧', text: 'Wet flowering conditions increase angular leaf spot and anthracnose risk. Apply protective fungicide and improve airflow between rows.' });
+      if (!isWindy && !isHot && !isWet) recs.push({ cls: 'good', icon: '🌸', text: 'Good flowering conditions — avoid any nitrogen topdressing now as it promotes leaves over pods.' });
+    } else if (n === 'Pod Fill') {
+      recs.push({ cls: 'good', icon: '🫘', text: 'Maintain moisture for good pod fill. Scout for bean fly and bruchid beetles which increase at this stage.' });
+    }
+  } else if (crop === 'tomatoes') {
+    if (n === 'Flowering') {
+      if (isWindy) recs.push({ cls: 'caution', icon: '💨', text: 'Wind can reduce pollination. Consider gentle manual vibration of flower clusters in the morning to improve fruit set.' });
+      if (isHot)   recs.push({ cls: 'warning', icon: '🔥', text: 'High temperatures cause blossom drop. Shade cloth or early-morning irrigation can help reduce heat stress.' });
+    } else if (n === 'Fruit Dev.') {
+      if (isWet)  recs.push({ cls: 'warning', icon: '🌧', text: 'Blossom end rot risk increases with fluctuating moisture. Maintain consistent irrigation and ensure calcium availability.' });
+      if (isHot)  recs.push({ cls: 'caution', icon: '🔥', text: 'Fruit sunscald possible in intense heat — mulch soil to retain moisture and reduce temperature spikes.' });
+      recs.push({ cls: 'good', icon: '🍅', text: 'Monitor for early blight and bacterial spot. Begin harvesting when fruit shows first colour break.' });
+    }
+  } else if (crop === 'wheat' || crop === 'sorghum') {
+    if (n === 'Heading') {
+      if (isWet)  recs.push({ cls: 'warning', icon: '⚠️', text: 'Wet conditions at heading increase risk of fusarium head blight. Apply a registered fungicide at early flowering stage.' });
+      if (isWindy) recs.push({ cls: 'caution', icon: '💨', text: 'Strong winds can cause lodging at heading. Assess field for lodging risk and prioritise those areas for early harvest.' });
+    } else if (n === 'Maturity') {
+      if (isWet)  recs.push({ cls: 'urgent', icon: '🌧', text: 'Delay harvest if rains persist — pre-harvest sprouting and mycotoxin contamination can destroy grain quality rapidly.' });
+      else        recs.push({ cls: 'good',   icon: '✅', text: 'Check grain moisture — harvest when below 14% for safe storage. Have drying arrangements in place.' });
+    }
+  } else if (crop === 'rice') {
+    if (n === 'Flowering') {
+      if (isHot)   recs.push({ cls: 'warning', icon: '🔥', text: 'Spikelet sterility occurs above 35°C at anthesis. Ensure fields are well-flooded to buffer temperature.' });
+      if (isWindy) recs.push({ cls: 'caution', icon: '💨', text: 'Wind at flowering can reduce pollen transfer. Avoid any spraying during this window.' });
+    } else if (n === 'Tillering') {
+      recs.push({ cls: 'good', icon: '🌾', text: 'Apply nitrogen top-dressing at active tillering to maximise tiller number. Maintain shallow flooding (5–10cm).' });
+      if (isWet)  recs.push({ cls: 'caution', icon: '🌧', text: 'Scout for blast disease — cool wet weather is the highest risk period. Apply tricyclazole if lesions appear.' });
+    }
+  } else if (crop === 'greengrams' || crop === 'cowpeas') {
+    if (n === 'Flowering') {
+      recs.push({ cls: 'good', icon: '🌸', text: 'Avoid nitrogen application at flowering — the crop is fixing its own nitrogen. Focus on micronutrients if leaves look pale.' });
+      if (isWindy) recs.push({ cls: 'caution', icon: '💨', text: 'Hold off any spraying in windy conditions to protect pollinators and avoid flower damage.' });
+    } else if (n === 'Pod Fill') {
+      if (isWet) recs.push({ cls: 'warning', icon: '🌧', text: 'Pod rot risk is high in wet conditions. Improve airflow and consider harvesting in batches as pods mature.' });
+    }
+  } else if (crop === 'cassava') {
+    if (n === 'Tuber Init.' || n === 'Tuber Bulking') {
+      if (isWet) recs.push({ cls: 'warning', icon: '🌧', text: 'Waterlogged soils cause cassava root rot. Ensure ridges or mounds are draining freely and clear any blocked furrows.' });
+      recs.push({ cls: 'good', icon: '🥬', text: 'Weed control is most important in the first 3 months. After this stage the canopy suppresses weeds naturally.' });
+    }
+  }
+
+  if (recs.length === 0) {
+    recs.push({ cls: 'good', icon: '🌱', text: `Your ${crop} is at the ${n} stage. Continue standard field management and monitor for any pest or disease symptoms.` });
+  }
+  return recs;
 }
 
 // Re-export for backwards compatibility
