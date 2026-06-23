@@ -386,7 +386,7 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
             <div className="flex items-center gap-1.5 mb-3">
               <span style={{ fontSize: 11 }}>✨</span>
               <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
-                Hisa ya AI
+                AI Usage Quota
               </span>
               {usageData.plan && (
                 <span
@@ -402,7 +402,7 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
             {aiLimit > 0 && (
               <div className="mb-2.5">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px]" style={{ color: 'var(--text2)' }}>Maombi ya AI</span>
+                  <span className="text-[10px]" style={{ color: 'var(--text2)' }}>AI Requests</span>
                   <span className="text-[10px] font-mono font-bold" style={{ color: barColor(aiPct) }}>
                     {aiRemaining.toLocaleString()} / {aiLimit.toLocaleString()}
                   </span>
@@ -414,8 +414,8 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
                   />
                 </div>
                 <div className="flex justify-between mt-0.5">
-                  <span className="text-[9px]" style={{ color: 'var(--muted)' }}>{aiUsed.toLocaleString()} zimetumika</span>
-                  <span className="text-[9px]" style={{ color: 'var(--muted)' }}>{aiPct}% zimebaki</span>
+                  <span className="text-[9px]" style={{ color: 'var(--muted)' }}>{aiUsed.toLocaleString()} used</span>
+                  <span className="text-[9px]" style={{ color: 'var(--muted)' }}>{aiPct}% remaining</span>
                 </div>
               </div>
             )}
@@ -424,7 +424,7 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
             {reqLimit > 0 && (
               <div className="mb-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px]" style={{ color: 'var(--text2)' }}>Maombi Jumla</span>
+                  <span className="text-[10px]" style={{ color: 'var(--text2)' }}>Total Requests</span>
                   <span className="text-[10px] font-mono font-bold" style={{ color: barColor(reqPct) }}>
                     {reqRemaining.toLocaleString()} / {reqLimit.toLocaleString()}
                   </span>
@@ -440,7 +440,7 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
 
             {periodEnd && (
               <div className="text-[9px] mt-1" style={{ color: 'var(--muted)' }}>
-                Kipindi kinaisha {periodEnd}
+                Period ends {periodEnd}
               </div>
             )}
           </div>

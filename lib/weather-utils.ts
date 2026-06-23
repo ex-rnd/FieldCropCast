@@ -316,5 +316,119 @@ export function generateSummary(data: any, farmState: FarmState): string {
   return `${greeting}${addressee}! ${currentDesc} ${weekOutlook}${rainNote}${windNote}${cropNote}`;
 }
 
+export function generateSummaryEn(data: any, farmState: FarmState): string {
+  const cur   = data.current  || {};
+  const daily = data.daily    || [];
+  const crop  = (farmState.crop || 'general').toLowerCase();
+  const name  = farmState.name;
+  if (!daily.length) return '';
+
+  const today   = daily[0] || {};
+  const tempMax = today.temp_max  != null ? Math.round(today.temp_max)  : null;
+  const tempMin = today.temp_min  != null ? Math.round(today.temp_min)  : null;
+  const curTemp = cur.temperature != null ? Math.round(cur.temperature) : tempMax;
+  const condCode = cur.condition_code || today.condition_code || 0;
+
+  const rainyDays = daily.filter((d: any) => d.precipitation_sum > 1 || d.precipitation_probability > 50).length;
+  const peakRain  = daily.reduce((a: any, b: any) => (b.precipitation_sum || 0) > (a.precipitation_sum || 0) ? b : a, daily[0]);
+  const windyDay  = daily.reduce((a: any, b: any) => (b.wind_max || 0) > (a.wind_max || 0) ? b : a, daily[0]);
+
+  const CROP_EN: Record<string, string> = {
+    general: 'your crops', maize: 'maize', tea: 'tea', coffee: 'coffee',
+    wheat: 'wheat', rice: 'rice', beans: 'beans', tomatoes: 'tomatoes',
+    potatoes: 'potatoes', sugarcane: 'sugarcane', flowers: 'flowers',
+  };
+  const cropEn = CROP_EN[crop] || 'your crops';
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const addressee = name ? `, ${name}` : '';
+
+  const isHot  = curTemp != null && curTemp >= 28;
+  const isCool = curTemp != null && curTemp <= 14;
+  const condFeel = isHot ? 'warm' : isCool ? 'cool' : 'mild';
+
+  let currentDesc = '';
+  if (curTemp != null && tempMax != null && tempMin != null) {
+    currentDesc = `It's ${condFeel} out there today — currently ${curTemp}°C, with a high of ${tempMax}°C and an overnight low of ${tempMin}°C.`;
+  } else if (curTemp != null) {
+    currentDesc = `It's currently ${curTemp}°C with ${wmoText(condCode).toLowerCase()}.`;
+  }
+
+  let weekOutlook = '';
+  if (rainyDays === 0) {
+    weekOutlook = 'The week ahead looks completely dry — a great window to get plenty of fieldwork done without worrying about rain.';
+  } else if (rainyDays === 1) {
+    weekOutlook = 'Mostly sunny week ahead, though light rain could come on one day — worth keeping an eye on.';
+  } else if (rainyDays <= 3) {
+    weekOutlook = `Expect a mixed week — ${rainyDays} days show rain chances, so plan your field activities around the drier days.`;
+  } else if (rainyDays <= 5) {
+    weekOutlook = `Prepare for a wet week — around ${rainyDays} out of 7 days are expected to see rain. Make sure any harvested produce is stored safely.`;
+  } else {
+    weekOutlook = `It's going to be a very rainy week — ${rainyDays} of the next 7 days are forecast to have rain. Keep your field drainage clear.`;
+  }
+
+  let rainNote = '';
+  if (peakRain.precipitation_sum > 8) {
+    const peakDay = new Date(peakRain.date + 'T12:00:00').toLocaleDateString('en-KE', { weekday: 'long' });
+    rainNote = ` ${peakDay} is the day to watch most closely — up to ${peakRain.precipitation_sum.toFixed(0)}mm of rain is expected.`;
+  } else if (peakRain.precipitation_sum > 3) {
+    const peakDay = new Date(peakRain.date + 'T12:00:00').toLocaleDateString('en-KE', { weekday: 'long' });
+    rainNote = ` A heavier shower could come through on ${peakDay} (${peakRain.precipitation_sum.toFixed(0)}mm).`;
+  }
+
+  let windNote = '';
+  if (windyDay.wind_max > 35) {
+    windNote = ` Strong winds up to ${windyDay.wind_max} km/h are forecast — check shade nets and any structures that could be blown over.`;
+  } else if (windyDay.wind_max > 22) {
+    windNote = ` Moderate winds of up to ${windyDay.wind_max} km/h are expected, so plan any spraying for early morning when it's calmer.`;
+  }
+
+  let cropNote = '';
+  if (crop === 'tea' || crop === 'coffee') {
+    if (tempMin != null && tempMin <= 8) {
+      cropNote = ` The cool nights (down to ${tempMin}°C) should actually benefit your ${cropEn}'s quality and flavour.`;
+    } else if (rainyDays >= 3) {
+      cropNote = ` The rain will help your ${cropEn} grow well this week, but keep an eye out for fungal disease in the humid conditions.`;
+    } else {
+      cropNote = ` Conditions look well-suited to your ${cropEn} — carry on with your usual routine.`;
+    }
+  } else if (crop === 'maize' || crop === 'wheat' || crop === 'rice') {
+    if (rainyDays >= 4) {
+      cropNote = ` Plenty of moisture coming for your ${cropEn} — just make sure drainage channels are clear so roots don't sit in standing water.`;
+    } else if (rainyDays <= 1 && tempMax != null && tempMax > 28) {
+      cropNote = ` The warm, dry stretch could stress your ${cropEn} — consider irrigating once or twice this week.`;
+    } else {
+      cropNote = ` Conditions look good for your ${cropEn} this week — a solid time to get fieldwork done.`;
+    }
+  } else if (crop === 'tomatoes' || crop === 'beans') {
+    if (tempMax != null && tempMax > 32) {
+      cropNote = ` This heat could affect flowering in your ${cropEn} — try watering in the early morning and evening to reduce stress.`;
+    } else if (rainyDays >= 3) {
+      cropNote = ` With all this moisture, watch your ${cropEn} closely for signs of blight or rot — humid air encourages those problems.`;
+    } else {
+      cropNote = ` Good conditions for your ${cropEn} this week — keep an eye on soil moisture daily.`;
+    }
+  } else if (crop === 'potatoes') {
+    cropNote = rainyDays >= 3
+      ? ` Potatoes like moisture, but too much can cause tuber rot — make sure the soil drains well.`
+      : ` Keep an eye on soil moisture — potatoes need consistent water especially during bulking.`;
+  } else if (crop === 'sugarcane') {
+    cropNote = rainyDays >= 3
+      ? ` This rain will push your sugarcane growth along nicely — a good time to top-dress with fertiliser.`
+      : ` Sugarcane is thirsty — if the rain falls short this week, make sure irrigation covers the gap.`;
+  } else if (crop === 'flowers') {
+    cropNote = windyDay.wind_max > 25
+      ? ` Wind could damage your flowers — stake or cover plants that might bend or break.`
+      : ` Good conditions for your flowers this week — a nice window to prepare for market.`;
+  } else {
+    cropNote = rainyDays <= 2
+      ? ` Overall a good week to get plenty of fieldwork done.`
+      : ` Plan your work around the rainy days to make the most of the dry spells.`;
+  }
+
+  return `${greeting}${addressee}! ${currentDesc} ${weekOutlook}${rainNote}${windNote}${cropNote}`;
+}
+
 // Re-export for backwards compatibility
 export { CROP_THRESHOLDS };

@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import type { WeatherData, FarmState, DailyForecast, HourlyForecast, WeatherAlert, AlertSeverity } from '@/lib/types';
-import { wmoIcon, fmtTemp, fmtPrecip, isDaytime, dayName, localHour, generateSummary } from '@/lib/weather-utils';
+import { wmoIcon, fmtTemp, fmtPrecip, isDaytime, dayName, localHour, generateSummary, generateSummaryEn } from '@/lib/weather-utils';
 
 interface Props {
   weatherData: WeatherData | null;
@@ -50,9 +50,43 @@ function SectionTitle({ icon, children }: { icon: string; children: React.ReactN
 export default function RightSidebar({ weatherData, farmState, alerts, onDismiss, onDismissAll }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [summaryLang, setSummaryLang]     = useState<'sw' | 'en'>('sw');
+  const [enSummary, setEnSummary]         = useState('');
+  const [isFetchingLang, setFetchingLang] = useState(false);
+
+  // Clear cached EN summary whenever weather data refreshes
+  useEffect(() => { setEnSummary(''); }, [weatherData]);
+
+  const fetchEnSummary = useCallback(async () => {
+    if (!weatherData || !farmState.lat || !farmState.lon) {
+      setEnSummary(generateSummaryEn(weatherData, farmState));
+      return;
+    }
+    setFetchingLang(true);
+    try {
+      const url = `/backend/api/weather?lat=${farmState.lat}&lon=${farmState.lon}&days=7&units=${farmState.units}&ai=true&lang=en`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      setEnSummary(data.ai_summary || data.summary || generateSummaryEn(weatherData, farmState));
+    } catch {
+      setEnSummary(generateSummaryEn(weatherData, farmState));
+    } finally {
+      setFetchingLang(false);
+    }
+  }, [weatherData, farmState]);
+
+  const handleLangToggle = useCallback((lang: 'sw' | 'en') => {
+    setSummaryLang(lang);
+    if (lang === 'en' && !enSummary) fetchEnSummary();
+  }, [enSummary, fetchEnSummary]);
+
+  const swSummary = weatherData?.ai_summary || weatherData?.summary || (weatherData ? generateSummary(weatherData, farmState) : '');
+  const activeSummary = summaryLang === 'en'
+    ? (enSummary || (isFetchingLang ? '' : generateSummaryEn(weatherData, farmState)))
+    : swSummary;
+
   const daily   = (weatherData?.daily  ?? []) as DailyForecast[];
   const hourly  = (weatherData?.hourly ?? []) as HourlyForecast[];
-  const ai      = weatherData?.ai_summary || weatherData?.summary || (weatherData ? generateSummary(weatherData, farmState) : '');
   const isDay   = isDaytime(daily);
 
   // Hourly: next 24h
@@ -70,13 +104,44 @@ export default function RightSidebar({ weatherData, farmState, alerts, onDismiss
 
       {/* ── AI Summary ──────────────────────────────────────────── */}
       <div className="rs-section">
-        <SectionTitle icon="✨">AI-Generated Summary</SectionTitle>
-        {ai ? (
+        <div className="flex items-center gap-2 mb-3">
+          <span style={{ fontSize: 13 }}>✨</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest flex-1" style={{ color: 'var(--muted)' }}>
+            AI-Generated Summary
+          </span>
+          {/* Language toggle */}
+          <div className="flex items-center gap-1">
+            {(['sw', 'en'] as const).map(lang => (
+              <button
+                key={lang}
+                onClick={() => handleLangToggle(lang)}
+                disabled={isFetchingLang && lang === 'en'}
+                className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide cursor-pointer transition-all disabled:opacity-50"
+                style={{
+                  background: summaryLang === lang ? 'rgba(74,222,128,.18)' : 'transparent',
+                  border: summaryLang === lang ? '1px solid rgba(74,222,128,.4)' : '1px solid var(--border)',
+                  color: summaryLang === lang ? 'var(--green)' : 'var(--muted)',
+                }}
+              >
+                {isFetchingLang && lang === 'en' ? (
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
+                    style={{ display: 'inline', animation: 'spin .7s linear infinite' }}>
+                    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                  </svg>
+                ) : lang.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {activeSummary ? (
           <div
+            key={summaryLang}
             className="p-3 rounded-xl text-sm leading-7 fade-in"
             style={{ background: 'rgba(74,222,128,.06)', border: '1px solid rgba(74,222,128,.18)', color: 'var(--text2)' }}
           >
-            {ai}
+            {activeSummary}
           </div>
         ) : (
           <div
