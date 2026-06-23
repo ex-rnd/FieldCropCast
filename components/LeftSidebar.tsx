@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import type { WeatherData, FarmState, DailyForecast, HourlyForecast, UsageData } from '@/lib/types';
 import {
   wmoIcon, wmoText, fmtTemp, fmtWind, fmtPrecip,
-  isDaytime, degreesToCardinal,
+  isDaytime, degreesToCardinal, localHour,
 } from '@/lib/weather-utils';
 
 interface Props {
@@ -316,26 +316,67 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
 
       <div className="h-px mx-4" style={{ background: 'var(--border)' }} />
 
-      {/* Quick stats */}
-      <div className="p-4 grid grid-cols-2 gap-2.5">
-        {[
-          { icon: '💧', val: humidity != null ? humidity + '%'              : '—', lbl: 'Humidity'    },
-          { icon: '💨', val: windSpeed != null ? fmtWind(windSpeed, farmState.units) + (windDir ? ' ' + windDir : '') : '—', lbl: 'Wind' },
-          { icon: '☀️', val: `${uvIdx} · ${uvLbl}`,                               lbl: 'UV Index'    },
-          { icon: '🌧', val: precip,                                               lbl: "Today's Rain" },
-        ].map(m => (
-          <div
-            key={m.lbl}
-            className="flex flex-col gap-0.5 p-2.5 rounded-xl"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <div className="flex items-center gap-1.5">
-              <span style={{ fontSize: 13 }}>{m.icon}</span>
-              <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color: 'var(--muted)' }}>{m.lbl}</span>
+      {/* Next 24 Hours */}
+      <div className="px-4 pt-3 pb-2">
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <span style={{ fontSize: 12 }}>⏱</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+            Next 24 Hours
+          </span>
+        </div>
+        {(() => {
+          let startIdx = 0;
+          for (let i = 0; i < hourly.length; i++) {
+            const d = new Date(hourly[i].time);
+            if (d >= new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours())) {
+              startIdx = i; break;
+            }
+          }
+          const next24 = hourly.slice(startIdx, startIdx + 24);
+          if (!next24.length) return (
+            <p className="text-[10px] py-2" style={{ color: 'var(--muted)' }}>
+              Hourly forecast loads after analysis.
+            </p>
+          );
+          return (
+            <div className="hourly-scroll">
+              {next24.map((h, i) => {
+                let hIsDay = isDay;
+                if (daily.length) {
+                  const hDate = new Date(h.time);
+                  const dayEntry = daily.find(d => d.date === hDate.toISOString().slice(0, 10));
+                  if (dayEntry?.sunrise && dayEntry?.sunset) {
+                    hIsDay = hDate >= new Date(dayEntry.sunrise) && hDate <= new Date(dayEntry.sunset);
+                  }
+                }
+                return (
+                  <div
+                    key={h.time}
+                    className="flex-none rounded-xl py-2.5 px-1.5 text-center"
+                    style={{
+                      width: 52,
+                      background: i === 0 ? 'rgba(74,222,128,.12)' : 'var(--surface)',
+                      border: i === 0 ? '1px solid rgba(74,222,128,.25)' : '1px solid var(--border)',
+                    }}
+                  >
+                    <div className="text-[0.6rem] mb-1" style={{ color: 'var(--muted)' }}>
+                      {i === 0 ? 'Sasa' : localHour(h.time)}
+                    </div>
+                    <div className="text-lg mb-0.5">{wmoIcon(h.condition_code, hIsDay)}</div>
+                    <div className="text-[11px] font-bold" style={{ color: 'var(--text)' }}>
+                      {fmtTemp(h.temperature, farmState.units)}
+                    </div>
+                    {h.precipitation_probability != null && (
+                      <div className="text-[0.58rem] mt-0.5" style={{ color: 'var(--sky)' }}>
+                        💧{h.precipitation_probability}%
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <div className="text-sm font-bold mt-0.5" style={{ color: 'var(--text)' }}>{m.val}</div>
-          </div>
-        ))}
+          );
+        })()}
       </div>
 
       <div className="h-px mx-4" style={{ background: 'var(--border)' }} />
