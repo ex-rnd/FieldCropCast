@@ -164,6 +164,12 @@ export default function Page() {
     if (s.lat && s.lon) fetchWeather(s);
   }, [fetchWeather]);
 
+  const handleResetCache = useCallback(() => {
+    localStorage.removeItem('fc-farm');
+    localStorage.removeItem('fc-theme');
+    window.location.reload();
+  }, []);
+
   // ── Crop change (no re-fetch — recommendations re-compute locally) ────
   const handleCropChange = useCallback((crop: string) => {
     setFarmState(s => {
@@ -195,6 +201,7 @@ export default function Page() {
         isRefreshing={isRefreshing}
         isFetching={isFetching}
         onRefresh={handleRefresh}
+        onResetCache={handleResetCache}
       />
 
       {/* ── 3-Column Body ──────────────────────────────────────────── */}
