@@ -7,3 +7,7 @@ dist/
 .cache/
 .next/
 out/
+
+
+# TypeScript build info
+tsconfig.tsbuildinfo
