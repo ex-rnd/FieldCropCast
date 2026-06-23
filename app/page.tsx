@@ -108,7 +108,7 @@ export default function Page() {
   // ── Auto-refresh every 3 min ──────────────────────────────────────────
   useEffect(() => {
     if (!weatherData) return;
-    const ms = uiConfig?.autoRefreshMs ?? 180_000;
+    const ms = uiConfig?.autoRefreshMs ?? 1_800_000;
     const id = setInterval(() => {
       const s = farmStateRef.current;
       if (s.lat && s.lon) fetchWeather(s, true);
@@ -190,7 +190,7 @@ export default function Page() {
           isFetching={isFetching}
           isRefreshing={isRefreshing}
           lastUpdated={lastUpdated}
-          autoRefreshMs={uiConfig?.autoRefreshMs ?? 180_000}
+          autoRefreshMs={uiConfig?.autoRefreshMs ?? 1_800_000}
           crops={uiConfig?.crops}
           units={uiConfig?.units}
           usageData={usageData}
