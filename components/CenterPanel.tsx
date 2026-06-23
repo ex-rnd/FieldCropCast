@@ -411,7 +411,7 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
         <section>
           <SectionHead icon="🌡" title="Current Conditions" />
           {weatherData ? (
-            <div className="flex gap-2 overflow-x-auto pb-1 fade-in" style={{ scrollbarWidth: 'none' }}>
+            <div className="flex gap-2 fade-in">
               {[
                 { icon: '🌧', val: daily[0] ? fmtPrecip(daily[0].precipitation_sum, farmState.units) : '—', lbl: 'Rain Today'  },
                 { icon: '🌡', val: curHour.feels_like != null ? fmtTemp(curHour.feels_like, farmState.units) : '—', lbl: 'Feels Like' },
@@ -422,8 +422,8 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
               ].map(m => (
                 <div
                   key={m.lbl}
-                  className="flex-none flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl"
-                  style={{ background: 'var(--surface)', border: '1px solid var(--border)', minWidth: 72 }}
+                  className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 rounded-xl text-center"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                 >
                   <span style={{ fontSize: 16 }}>{m.icon}</span>
                   <span className="text-xs font-bold leading-tight text-center" style={{ color: 'var(--text)' }}>{m.val}</span>
