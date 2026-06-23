@@ -503,53 +503,6 @@ export default function RightSidebar({ weatherData, farmState, alerts, onDismiss
         )}
       </div>
 
-      {/* ── 24-Hour Forecast ─────────────────────────────────────── */}
-      <div className="rs-section">
-        <SectionTitle icon="⏱">Next 24 Hours</SectionTitle>
-        {next24.length > 0 ? (
-          <div className="hourly-scroll fade-in">
-            {next24.map((h, i) => {
-              let hIsDay = isDay;
-              if (daily.length) {
-                const hDate = new Date(h.time);
-                const dayEntry = daily.find(d => d.date === hDate.toISOString().slice(0, 10));
-                if (dayEntry?.sunrise && dayEntry?.sunset) {
-                  hIsDay = hDate >= new Date(dayEntry.sunrise) && hDate <= new Date(dayEntry.sunset);
-                }
-              }
-              return (
-                <div
-                  key={h.time}
-                  className="flex-none rounded-xl py-2.5 px-1.5 text-center"
-                  style={{
-                    width: 58,
-                    background: i === 0 ? 'rgba(74,222,128,.12)' : 'var(--surface)',
-                    border: i === 0 ? '1px solid rgba(74,222,128,.25)' : '1px solid var(--border)',
-                  }}
-                >
-                  <div className="text-[0.6rem] mb-1" style={{ color: 'var(--muted)' }}>
-                    {i === 0 ? 'Sasa' : localHour(h.time)}
-                  </div>
-                  <div className="text-lg mb-0.5">{wmoIcon(h.condition_code, hIsDay)}</div>
-                  <div className="text-xs font-bold" style={{ color: 'var(--text)' }}>
-                    {fmtTemp(h.temperature, farmState.units)}
-                  </div>
-                  {h.precipitation_probability != null && (
-                    <div className="text-[0.58rem] mt-0.5" style={{ color: 'var(--sky)' }}>
-                      💧{h.precipitation_probability}%
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-xs text-center py-4" style={{ color: 'var(--muted)' }}>
-            Hourly forecast loads after analysis.
-          </p>
-        )}
-      </div>
-
       {/* ── 7-Day Forecast ───────────────────────────────────────── */}
       <div className="rs-section">
         <SectionTitle icon="📅">7-Day Forecast</SectionTitle>
