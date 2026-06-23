@@ -256,6 +256,7 @@ export default function Page() {
           alerts={alerts}
           onDismiss={handleDismissAlert}
           onDismissAll={handleDismissAll}
+          isFetching={isFetching}
         />
       </div>
 

@@ -395,6 +395,20 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
                 </div>
               ))}
             </div>
+          ) : isFetching ? (
+            <div className="animate-pulse flex gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-1 flex-col items-center gap-1.5 py-2.5 rounded-xl"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                >
+                  <div className="h-4 w-4 rounded-full" style={{ background: 'var(--border)' }} />
+                  <div className="h-2.5 rounded-full w-10" style={{ background: 'var(--border)' }} />
+                  <div className="h-2 rounded-full w-8" style={{ background: 'var(--border)' }} />
+                </div>
+              ))}
+            </div>
           ) : (
             <div
               className="flex flex-col items-center gap-3 py-10 rounded-2xl text-center"
@@ -404,15 +418,31 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
               <div>
                 <p className="text-sm font-semibold" style={{ color: 'var(--text2)' }}>No data loaded</p>
                 <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-                  {isFetching ? 'Fetching weather data…' : 'Complete farm setup to see live conditions.'}
+                  Complete farm setup to see live conditions.
                 </p>
               </div>
-              {isFetching && <div className="spinner" style={{ width: 28, height: 28, borderWidth: 2 }} />}
             </div>
           )}
         </section>
 
         {/* ── Risk Overview ─────────────────────────────────────── */}
+        {!risks && isFetching && (
+          <section>
+            <SectionHead icon="⚠️" title="7-Day Risk Assessment" />
+            <div className="animate-pulse grid gap-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="p-4 rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <div className="h-6 w-6 rounded-full mb-3" style={{ background: 'var(--border)' }} />
+                  <div className="h-2 rounded-full w-12 mb-2.5" style={{ background: 'var(--border)' }} />
+                  <div className="h-4 rounded-full w-16 mb-2.5" style={{ background: 'var(--border)' }} />
+                  <div className="h-1.5 rounded-full mb-2.5" style={{ background: 'var(--border)' }} />
+                  <div className="h-2 rounded-full w-full mb-1.5" style={{ background: 'var(--border)' }} />
+                  <div className="h-2 rounded-full w-3/4" style={{ background: 'var(--border)' }} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         {risks && (
           <section className="fade-in">
             <SectionHead icon="⚠️" title="7-Day Risk Assessment" />

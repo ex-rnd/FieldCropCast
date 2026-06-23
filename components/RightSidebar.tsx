@@ -10,6 +10,7 @@ interface Props {
   alerts: WeatherAlert[];
   onDismiss: (id: string) => void;
   onDismissAll: () => void;
+  isFetching?: boolean;
 }
 
 // ── Tactics from AuditLog.tsx: colour-coded rows with status ──────────
@@ -47,7 +48,7 @@ function SectionTitle({ icon, children }: { icon: string; children: React.ReactN
   );
 }
 
-export default function RightSidebar({ weatherData, farmState, alerts, onDismiss, onDismissAll }: Props) {
+export default function RightSidebar({ weatherData, farmState, alerts, onDismiss, onDismissAll, isFetching = false }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [summaryLang, setSummaryLang]     = useState<'sw' | 'en'>('sw');
@@ -194,6 +195,16 @@ export default function RightSidebar({ weatherData, farmState, alerts, onDismiss
             style={{ background: 'rgba(74,222,128,.06)', border: '1px solid rgba(74,222,128,.18)', color: 'var(--text2)' }}
           >
             {activeSummary}
+          </div>
+        ) : isFetching ? (
+          <div
+            className="animate-pulse p-3 rounded-xl"
+            style={{ background: 'rgba(74,222,128,.06)', border: '1px solid rgba(74,222,128,.18)' }}
+          >
+            {[90, 75, 82, 60].map((w, i) => (
+              <div key={i} className="h-2.5 rounded-full mb-2.5 last:mb-0"
+                style={{ background: 'var(--border)', width: w + '%' }} />
+            ))}
           </div>
         ) : (
           <div
@@ -534,6 +545,19 @@ export default function RightSidebar({ weatherData, farmState, alerts, onDismiss
                 </div>
               );
             })}
+          </div>
+        ) : isFetching ? (
+          <div className="animate-pulse flex flex-col">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="forecast-row">
+                <div className="h-2.5 rounded-full w-9 shrink-0" style={{ background: 'var(--border)' }} />
+                <div className="h-5 w-5 rounded-full shrink-0" style={{ background: 'var(--border)' }} />
+                <div className="flex-1" />
+                <div className="h-2.5 rounded-full w-8 shrink-0" style={{ background: 'var(--border)' }} />
+                <div className="h-2.5 rounded-full w-6 shrink-0" style={{ background: 'var(--border)' }} />
+                <div className="h-2.5 rounded-full w-7 shrink-0" style={{ background: 'var(--border)' }} />
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-xs text-center py-4" style={{ color: 'var(--muted)' }}>
