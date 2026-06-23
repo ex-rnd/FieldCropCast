@@ -10,7 +10,7 @@ export default function Header({ theme, onThemeToggle }: HeaderProps) {
     <header className="flex items-center gap-3 mb-7 flex-wrap">
       <div>
         <div className="text-xl font-black tracking-tight" style={{ color: 'var(--green)' }}>
-          🌾 FieldCast
+          🌾 FieldCropCast
         </div>
         <span className="block text-xs -mt-0.5" style={{ color: 'var(--muted)' }}>
           Farmer Weather Risk Dashboard

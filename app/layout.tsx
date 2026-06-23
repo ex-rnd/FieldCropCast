@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'FieldCast — Farmer Weather Risk Dashboard',
+  title: 'FieldCropCast — Farmer Weather Risk Dashboard',
   description: 'Real-time weather risk assessment for farmers',
 };
 

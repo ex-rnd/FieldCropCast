@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=5&addressdetails=1';
-    const response = await fetch(url, { headers: { 'User-Agent': 'FieldCast-Dashboard/1.0' } });
+    const response = await fetch(url, { headers: { 'User-Agent': 'FieldCropCast-Dashboard/1.0' } });
     const data = await response.json() as any[];
     const results = data.map((r: any) => {
       const addr = r.address || {};

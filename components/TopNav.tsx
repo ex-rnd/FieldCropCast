@@ -80,7 +80,7 @@ export default function TopNav({
             backgroundClip: 'text',
           }}
         >
-          FieldCast
+          FieldCropCast
         </span>
       </div>
 

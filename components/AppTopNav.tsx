@@ -65,7 +65,7 @@ export default function AppTopNav({
               backgroundClip: 'text',
             }}
           >
-            FieldCast
+            FieldCropCast
           </div>
           <div className="text-[9px] leading-none mt-0.5 font-medium" style={{ color: 'var(--muted)' }}>
             Farm Weather Intelligence
