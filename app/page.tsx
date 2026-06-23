@@ -111,14 +111,30 @@ export default function Page() {
       const url  = `/backend/api/weather?lat=${state.lat}&lon=${state.lon}&days=7&units=${state.units}&ai=true&lang=sw`;
       const res  = await fetch(url);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      if (!res.ok) {
+        if (!silent) {
+          const code = data?.code as string | undefined;
+          if (code === 'QUOTA_EXCEEDED') {
+            const reset = data.resetAt ? ' Resets ' + new Date(data.resetAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' }) + '.' : '';
+            showError('AI quota exhausted for this period.' + reset);
+          } else if (code === 'AUTH_ERROR') {
+            showError('Service authentication failed. Contact support.');
+          } else if (code === 'TIMEOUT') {
+            showError('Request timed out. Check your connection and try again.');
+          } else {
+            showError('Weather service is temporarily unavailable. Please try again shortly.');
+          }
+        }
+        return;
+      }
 
       setWeather(data);
       hasDataRef.current = true;
       setLastUpdated(new Date());
       if (isFirst) loadUsage();
-    } catch (err: any) {
-      if (!silent) showError('Could not load weather data: ' + err.message);
+    } catch (err: unknown) {
+      if (!silent) showError('Could not load weather data. Check your connection.');
     } finally {
       setFetching(false);
       setRefreshing(false);
