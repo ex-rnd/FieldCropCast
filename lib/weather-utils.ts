@@ -161,9 +161,9 @@ export function computeRisks(daily: DailyForecast[], crop: string, units: 'metri
   else if (minTemp <= thr.frostC)     tempScore = Math.max(tempScore, 60 + 30 * (thr.frostC - minTemp) / 3);
 
   return {
-    rain: { score: rainScore, level: riskLabel(rainScore), detail: 'Kilele: ' + fmtPrecip(maxPrecip, units) + ' · uwezekano ' + maxPrecipP + '%' },
-    wind: { score: windScore, level: riskLabel(windScore), detail: 'Kasi kubwa: ' + fmtWind(maxWind, units) },
-    temp: { score: tempScore, level: riskLabel(tempScore), detail: 'Juu ' + fmtTemp(maxTemp, units) + ' · Chini ' + fmtTemp(minTemp, units) },
+    rain: { score: rainScore, level: riskLabel(rainScore), detail: 'Peak: ' + fmtPrecip(maxPrecip, units) + ' · chance ' + maxPrecipP + '%' },
+    wind: { score: windScore, level: riskLabel(windScore), detail: 'Max speed: ' + fmtWind(maxWind, units) },
+    temp: { score: tempScore, level: riskLabel(tempScore), detail: 'High ' + fmtTemp(maxTemp, units) + ' · Low ' + fmtTemp(minTemp, units) },
   };
 }
 
