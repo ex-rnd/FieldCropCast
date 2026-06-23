@@ -24,8 +24,14 @@ const CROPS = [
   { value: 'beans',     icon: '🫘', label: 'Beans'    },
   { value: 'tomatoes',  icon: '🍅', label: 'Tomatoes' },
   { value: 'potatoes',  icon: '🥔', label: 'Potatoes' },
-  { value: 'sugarcane', icon: '🎋', label: 'Cane'     },
-  { value: 'flowers',   icon: '🌸', label: 'Flowers'  },
+  { value: 'sugarcane',  icon: '🎋', label: 'Cane'       },
+  { value: 'flowers',    icon: '🌸', label: 'Flowers'    },
+  { value: 'bananas',    icon: '🍌', label: 'Bananas'    },
+  { value: 'greengrams', icon: '🫛', label: 'Gr. Grams'  },
+  { value: 'cowpeas',    icon: '🌿', label: 'Cowpeas'    },
+  { value: 'sorghum',    icon: '🌾', label: 'Sorghum'    },
+  { value: 'cassava',    icon: '🥬', label: 'Cassava'    },
+  { value: 'mangoes',    icon: '🥭', label: 'Mangoes'    },
 ];
 
 const RISK_COLOR: Record<string, string> = {

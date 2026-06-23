@@ -89,9 +89,15 @@ const CROP_THRESHOLDS: Record<string, { heatC: number; frostC: number; windHigh:
   beans:     { heatC: 32, frostC: 3, windHigh: 25, windCrit: 45, rainHighMm: 20, rainCritMm: 35 },
   tomatoes:  { heatC: 32, frostC: 5, windHigh: 25, windCrit: 45, rainHighMm: 15, rainCritMm: 25 },
   potatoes:  { heatC: 28, frostC: 2, windHigh: 30, windCrit: 55, rainHighMm: 20, rainCritMm: 35 },
-  sugarcane: { heatC: 38, frostC: 5, windHigh: 40, windCrit: 65, rainHighMm: 30, rainCritMm: 55 },
-  flowers:   { heatC: 28, frostC: 4, windHigh: 20, windCrit: 40, rainHighMm: 10, rainCritMm: 20 },
-  general:   { heatC: 35, frostC: 3, windHigh: 35, windCrit: 60, rainHighMm: 20, rainCritMm: 40 },
+  sugarcane:  { heatC: 38, frostC: 5,  windHigh: 40, windCrit: 65, rainHighMm: 30, rainCritMm: 55 },
+  flowers:    { heatC: 28, frostC: 4,  windHigh: 20, windCrit: 40, rainHighMm: 10, rainCritMm: 20 },
+  bananas:    { heatC: 38, frostC: 10, windHigh: 30, windCrit: 50, rainHighMm: 25, rainCritMm: 45 },
+  greengrams: { heatC: 35, frostC: 5,  windHigh: 25, windCrit: 45, rainHighMm: 15, rainCritMm: 30 },
+  cowpeas:    { heatC: 38, frostC: 5,  windHigh: 25, windCrit: 45, rainHighMm: 15, rainCritMm: 30 },
+  sorghum:    { heatC: 40, frostC: 2,  windHigh: 35, windCrit: 60, rainHighMm: 15, rainCritMm: 30 },
+  cassava:    { heatC: 40, frostC: 5,  windHigh: 35, windCrit: 60, rainHighMm: 20, rainCritMm: 45 },
+  mangoes:    { heatC: 40, frostC: 8,  windHigh: 30, windCrit: 55, rainHighMm: 20, rainCritMm: 40 },
+  general:    { heatC: 35, frostC: 3,  windHigh: 35, windCrit: 60, rainHighMm: 20, rainCritMm: 40 },
 };
 
 // Swahili crop names
@@ -105,8 +111,14 @@ const CROP_SW: Record<string, string> = {
   beans:     'maharagwe',
   tomatoes:  'nyanya',
   potatoes:  'viazi',
-  sugarcane: 'miwa',
-  flowers:   'maua',
+  sugarcane:  'miwa',
+  flowers:    'maua',
+  bananas:    'ndizi',
+  greengrams: 'ndengu',
+  cowpeas:    'kunde',
+  sorghum:    'mtama',
+  cassava:    'muhogo',
+  mangoes:    'maembe',
 };
 
 function cropSw(crop: string): string {
@@ -307,6 +319,40 @@ export function generateSummary(data: any, farmState: FarmState): string {
     cropNote = windyDay.wind_max > 25
       ? ` Upepo huu unaweza kudhuru maua — funika au weka nguzo kwenye mimea inayoweza kupinduka.`
       : ` Hali hii inafaa kwa maua yako — wiki nzuri ya kupanga mazao yako kwa soko.`;
+  } else if (crop === 'bananas') {
+    cropNote = windyDay.wind_max > 30
+      ? ` Upepo mkali unaweza kupindua miti ya ndizi — weka nguzo kwenye miti inayobeba matunda.`
+      : rainyDays >= 4
+      ? ` Mvua nzuri kwa ndizi, lakini angalia ugonjwa wa Fusarium katika hali hii ya unyevu mwingi.`
+      : ` Hali hii inafaa kwa ndizi — hakikisha mbolea ya potassium iko ya kutosha.`;
+  } else if (crop === 'greengrams') {
+    cropNote = rainyDays >= 4
+      ? ` Mvua nyingi inaweza kusababisha kuoza kwa ndengu — hakikisha mifereji iko safi.`
+      : rainyDays === 0 && tempMax != null && tempMax > 32
+      ? ` Ndengu zinastahimili ukame, lakini joto kali wakati wa maua linaweza kupunguza mavuno — mwagilia kama inawezekana.`
+      : ` Hali nzuri kwa ndengu — zinastawi vizuri katika hali hii ya hewa.`;
+  } else if (crop === 'cowpeas') {
+    cropNote = rainyDays >= 4
+      ? ` Mvua nyingi inaweza kuathiri kunde — angalia magonjwa ya ukungu na uhakikishe mifereji inafanya kazi.`
+      : ` Kunde zinastahimili vizuri hali hii ya hewa — endelea na mpango wako wa kawaida.`;
+  } else if (crop === 'sorghum') {
+    cropNote = rainyDays === 0 && tempMax != null && tempMax > 30
+      ? ` Mtama unastahimili ukame vizuri — hali hii ni ya kawaida kwa zao hili.`
+      : rainyDays >= 5
+      ? ` Mvua nyingi inaweza kusababisha ugonjwa wa ukungu kwenye mtama — angalia mimea kwa dalili za ugonjwa.`
+      : ` Hali hii inafaa kwa mtama — wakati mzuri wa kupanda au kutia mbolea.`;
+  } else if (crop === 'cassava') {
+    cropNote = rainyDays >= 5
+      ? ` Muhogo haupendi maji mengi — hakikisha udongo unapitisha maji vizuri ili kuzuia kuoza kwa mizizi.`
+      : ` Muhogo unastahimili vizuri hali hii — endelea na matunzo ya kawaida ya shamba.`;
+  } else if (crop === 'mangoes') {
+    if (rainyDays >= 3 && tempMax != null && tempMax > 25) {
+      cropNote = ` Hali ya unyevu na joto inaweza kusababisha ugonjwa wa batobato kwa maembe — nyunyizia dawa kwa wakati.`;
+    } else if (rainyDays === 0) {
+      cropNote = ` Hali kavu inafaa kwa maua ya maembe — mvua wakati wa maua inaweza kupunguza mavuno.`;
+    } else {
+      cropNote = ` Hali hii inafaa kwa maembe — fuatilia ukuaji wa matunda na udhibiti wa wadudu.`;
+    }
   } else {
     cropNote = rainyDays <= 2
       ? ` Kwa ujumla ni wiki nzuri ya kufanya kazi nyingi shambani.`
@@ -421,6 +467,40 @@ export function generateSummaryEn(data: any, farmState: FarmState): string {
     cropNote = windyDay.wind_max > 25
       ? ` Wind could damage your flowers — stake or cover plants that might bend or break.`
       : ` Good conditions for your flowers this week — a nice window to prepare for market.`;
+  } else if (crop === 'bananas') {
+    cropNote = windyDay.wind_max > 30
+      ? ` Strong winds can topple banana plants — prop up any stems that are carrying fruit before the wind arrives.`
+      : rainyDays >= 4
+      ? ` Good rainfall for bananas, but watch out for Fusarium wilt in these humid conditions — inspect your plants regularly.`
+      : ` Conditions look good for your bananas — make sure potassium levels in your soil are adequate for healthy bunch development.`;
+  } else if (crop === 'greengrams') {
+    cropNote = rainyDays >= 4
+      ? ` Heavy rain can cause pod rotting in green grams — make sure your drainage is working and avoid waterlogged patches.`
+      : rainyDays === 0 && tempMax != null && tempMax > 32
+      ? ` Green grams handle dry spells well, but intense heat during flowering can reduce your yield — irrigate if you can.`
+      : ` Good conditions for your green grams this week — they should thrive in this weather.`;
+  } else if (crop === 'cowpeas') {
+    cropNote = rainyDays >= 4
+      ? ` Too much rain can bring fungal problems to cowpeas — keep drainage clear and check plants for early signs of disease.`
+      : ` Cowpeas are well-suited to these conditions — carry on with your normal field routine.`;
+  } else if (crop === 'sorghum') {
+    cropNote = rainyDays === 0 && tempMax != null && tempMax > 30
+      ? ` Sorghum handles dry, hot conditions better than most crops — this weather is well within its comfort zone.`
+      : rainyDays >= 5
+      ? ` Heavy rain increases the risk of mould and smut in sorghum — scout your crop and act quickly if you see any symptoms.`
+      : ` Good conditions for your sorghum this week — a solid time to top-dress or do any weeding.`;
+  } else if (crop === 'cassava') {
+    cropNote = rainyDays >= 5
+      ? ` Cassava doesn't like waterlogged soils — check that your ridges or mounds are draining properly to protect the tubers.`
+      : ` Cassava handles these conditions well — keep up with weeding, especially in the early growth stages.`;
+  } else if (crop === 'mangoes') {
+    if (rainyDays >= 3 && tempMax != null && tempMax > 25) {
+      cropNote = ` Warm, wet conditions are ideal for anthracnose disease on mangoes — spray a protective fungicide now if you haven't already.`;
+    } else if (rainyDays === 0) {
+      cropNote = ` Dry weather is actually good for mango flowering — rain during flowering can cause poor fruit set, so this is a favourable spell.`;
+    } else {
+      cropNote = ` Reasonable conditions for your mangoes — keep an eye on fruit development and stay on top of pest scouting.`;
+    }
   } else {
     cropNote = rainyDays <= 2
       ? ` Overall a good week to get plenty of fieldwork done.`
