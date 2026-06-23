@@ -26,6 +26,57 @@ const DEFAULT_UNITS = [
   { value: 'imperial', label: 'Imperial (°F, mph)' },
 ];
 
+// ── Kenya county centroids (lat, lon) ────────────────────────────────
+const COUNTY_COORDS: Record<string, { lat: string; lon: string }> = {
+  'Baringo':          { lat: '0.84270',  lon: '36.08976' },
+  'Bomet':            { lat: '-0.78171', lon: '35.34168' },
+  'Bungoma':          { lat: '0.56952',  lon: '34.55920' },
+  'Busia':            { lat: '0.43484',  lon: '34.24199' },
+  'Elgeyo-Marakwet':  { lat: '0.98830',  lon: '35.51090' },
+  'Embu':             { lat: '-0.53019', lon: '37.45048' },
+  'Garissa':          { lat: '-0.45350', lon: '39.64601' },
+  'Homa Bay':         { lat: '-0.52717', lon: '34.45776' },
+  'Isiolo':           { lat: '0.35248',  lon: '38.00167' },
+  'Kajiado':          { lat: '-2.09820', lon: '36.78196' },
+  'Kakamega':         { lat: '0.28422',  lon: '34.75196' },
+  'Kericho':          { lat: '-0.36894', lon: '35.28627' },
+  'Kiambu':           { lat: '-1.03128', lon: '36.86702' },
+  'Kilifi':           { lat: '-3.51004', lon: '39.90992' },
+  'Kirinyaga':        { lat: '-0.55898', lon: '37.27702' },
+  'Kisii':            { lat: '-0.68171', lon: '34.76610' },
+  'Kisumu':           { lat: '-0.10220', lon: '34.76176' },
+  'Kitui':            { lat: '-1.36667', lon: '38.01667' },
+  'Kwale':            { lat: '-4.17387', lon: '39.45202' },
+  'Laikipia':         { lat: '0.20167',  lon: '36.90000' },
+  'Lamu':             { lat: '-2.26852', lon: '40.90200' },
+  'Machakos':         { lat: '-1.51773', lon: '37.26327' },
+  'Makueni':          { lat: '-1.99913', lon: '37.62048' },
+  'Mandera':          { lat: '3.94167',  lon: '41.86667' },
+  'Marsabit':         { lat: '2.33333',  lon: '37.98333' },
+  'Meru':             { lat: '0.04674',  lon: '37.64941' },
+  'Migori':           { lat: '-1.06346', lon: '34.47319' },
+  'Mombasa':          { lat: '-4.05466', lon: '39.66359' },
+  "Murang'a":         { lat: '-0.78326', lon: '37.02765' },
+  'Nairobi':          { lat: '-1.28333', lon: '36.81667' },
+  'Nakuru':           { lat: '-0.30310', lon: '36.08011' },
+  'Nandi':            { lat: '0.18366',  lon: '35.12957' },
+  'Narok':            { lat: '-1.08178', lon: '35.87120' },
+  'Nyamira':          { lat: '-0.56700', lon: '34.93500' },
+  'Nyandarua':        { lat: '-0.18235', lon: '36.52180' },
+  'Nyeri':            { lat: '-0.41654', lon: '36.94798' },
+  'Samburu':          { lat: '1.20000',  lon: '36.90000' },
+  'Siaya':            { lat: '-0.06099', lon: '34.28778' },
+  'Taita-Taveta':     { lat: '-3.31584', lon: '38.35734' },
+  'Tana River':       { lat: '-1.60000', lon: '39.65000' },
+  'Tharaka-Nithi':    { lat: '-0.29667', lon: '37.92250' },
+  'Trans Nzoia':      { lat: '1.05641',  lon: '34.95069' },
+  'Turkana':          { lat: '3.11720',  lon: '35.59580' },
+  'Uasin Gishu':      { lat: '0.55272',  lon: '35.26988' },
+  'Vihiga':           { lat: '0.07670',  lon: '34.72302' },
+  'Wajir':            { lat: '1.74718',  lon: '40.05745' },
+  'West Pokot':       { lat: '1.62082',  lon: '35.38705' },
+};
+
 // ── Setup form (no data yet, or editing) ─────────────────────────────
 function SetupForm({ farmState, onChange, onAnalyze, isFetching, units, onCancel, hasData }: {
   farmState: FarmState;
@@ -39,6 +90,12 @@ function SetupForm({ farmState, onChange, onAnalyze, isFetching, units, onCancel
   const upd = (key: keyof FarmState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       onChange({ ...farmState, [key]: e.target.value });
+
+  const handleCountyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const county = e.target.value;
+    const coords = COUNTY_COORDS[county];
+    onChange({ ...farmState, county, ...(coords ?? {}) });
+  };
 
   const unitList = units ?? DEFAULT_UNITS;
 
@@ -94,7 +151,7 @@ function SetupForm({ farmState, onChange, onAnalyze, isFetching, units, onCancel
         <select
           className="form-input"
           value={farmState.county}
-          onChange={upd('county')}
+          onChange={handleCountyChange}
           style={{ cursor: 'pointer' }}
         >
           <option value="">— Select county —</option>
