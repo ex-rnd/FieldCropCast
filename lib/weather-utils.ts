@@ -204,54 +204,116 @@ export function generateSummary(data: any, farmState: FarmState): string {
   const cur   = data.current  || {};
   const daily = data.daily    || [];
   const crop  = (farmState.crop || 'general').toLowerCase();
-  const name  = farmState.name || 'Shamba lako';
+  const name  = farmState.name;
   if (!daily.length) return '';
 
   const today   = daily[0] || {};
-  const tempMax = today.temp_max  != null ? Math.round(today.temp_max)  : '—';
-  const tempMin = today.temp_min  != null ? Math.round(today.temp_min)  : '—';
+  const tempMax = today.temp_max  != null ? Math.round(today.temp_max)  : null;
+  const tempMin = today.temp_min  != null ? Math.round(today.temp_min)  : null;
   const curTemp = cur.temperature != null ? Math.round(cur.temperature) : tempMax;
-  const condText = wmoText(cur.condition_code || today.condition_code || 0);
-  const sw       = cropSw(crop);
+  const condCode = cur.condition_code || today.condition_code || 0;
+  const sw = cropSw(crop);
 
   const rainyDays = daily.filter((d: any) => d.precipitation_sum > 1 || d.precipitation_probability > 50).length;
   const peakRain  = daily.reduce((a: any, b: any) => (b.precipitation_sum || 0) > (a.precipitation_sum || 0) ? b : a, daily[0]);
   const windyDay  = daily.reduce((a: any, b: any) => (b.wind_max || 0) > (a.wind_max || 0) ? b : a, daily[0]);
 
-  const outlook = rainyDays === 0
-    ? 'Siku 7 zijazo zinaonekana kuwa kavu bila mvua inayotarajiwa.'
-    : rainyDays <= 2
-    ? `Hali kavu zaidi inatarajiwa na siku ${rainyDays} za mvua ndogo katika utabiri.`
-    : rainyDays <= 4
-    ? `Siku ${rainyDays} kati ya 7 zinaonyesha shughuli za mvua — wiki yenye hali mchanganyiko.`
-    : `Wiki yenye mvua nyingi inatarajiwa na mvua siku ${rainyDays} kati ya 7 zijazo.`;
+  // ── Time-aware greeting ────────────────────────────────────────────
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Habari za asubuhi' : hour < 17 ? 'Habari za mchana' : 'Habari za jioni';
+  const addressee = name ? `, ${name}` : '';
 
-  let rainNote = '';
-  if (peakRain.precipitation_sum > 5) {
-    const peakDate = new Date(peakRain.date + 'T12:00:00').toLocaleDateString('sw-KE', { weekday: 'long', day: 'numeric', month: 'short' });
-    rainNote = ` Mvua kubwa zaidi (mm ${peakRain.precipitation_sum.toFixed(1)}) inatarajiwa ${peakDate}.`;
+  // ── Current conditions — conversational ───────────────────────────
+  const isHot  = curTemp != null && curTemp >= 28;
+  const isCool = curTemp != null && curTemp <= 14;
+  const condFeel = isHot ? 'iko joto kidogo' : isCool ? 'ipo baridi' : 'iko sawa';
+
+  let currentDesc = '';
+  if (curTemp != null && tempMax != null && tempMin != null) {
+    currentDesc = `Leo hali ya hewa ${condFeel} — sasa hivi ${curTemp}°C, na leo joto litafika ${tempMax}°C mchana na kushuka hadi ${tempMin}°C usiku.`;
+  } else if (curTemp != null) {
+    currentDesc = `Sasa hivi joto ni ${curTemp}°C na anga ${wmoText(condCode).toLowerCase()}.`;
   }
 
-  let windNote = '';
-  if (windyDay.wind_max > 30)      windNote = ` Upepo mkali unaofika ${windyDay.wind_max} km/h unatarajiwa — hakikisha miundo na nyavu za kivuli.`;
-  else if (windyDay.wind_max > 20) windNote = ` Upepo wa wastani hadi ${windyDay.wind_max} km/h umetabiriwa.`;
+  // ── Week outlook — natural phrasing ───────────────────────────────
+  let weekOutlook = '';
+  if (rainyDays === 0) {
+    weekOutlook = 'Wiki hii nzima itakuwa kavu — fursa nzuri ya kufanya kazi nyingi shambani bila wasiwasi wa mvua.';
+  } else if (rainyDays === 1) {
+    weekOutlook = 'Wiki hii kwa ujumla itakuwa na jua, ingawa mvua kidogo inaweza kunyesha siku moja — kaa macho.';
+  } else if (rainyDays <= 3) {
+    weekOutlook = `Wiki hii itakuwa na mchanganyiko wa jua na mvua — siku ${rainyDays} zinaonyesha uwezekano wa mvua, kwa hiyo panga kazi zako vizuri.`;
+  } else if (rainyDays <= 5) {
+    weekOutlook = `Jiandae kwa wiki yenye mvua nyingi — karibu siku ${rainyDays} kati ya 7 zinatarajiwa kuwa na mvua. Usisahau kuhifadhi mazao wazi.`;
+  } else {
+    weekOutlook = `Wiki hii mvua itakuwa ya kawaida sana — siku ${rainyDays} kati ya 7 zinatazamiwa kuwa na mvua. Hakikisha mifereji ya shamba iko safi.`;
+  }
 
+  // ── Peak rain — specific and actionable ───────────────────────────
+  let rainNote = '';
+  if (peakRain.precipitation_sum > 8) {
+    const peakDay = new Date(peakRain.date + 'T12:00:00')
+      .toLocaleDateString('sw-KE', { weekday: 'long' });
+    rainNote = ` ${peakDay} ndiyo siku ya kuwa makini zaidi — mvua ya mm ${peakRain.precipitation_sum.toFixed(0)} inatarajiwa.`;
+  } else if (peakRain.precipitation_sum > 3) {
+    const peakDay = new Date(peakRain.date + 'T12:00:00')
+      .toLocaleDateString('sw-KE', { weekday: 'long' });
+    rainNote = ` Mvua kubwa kidogo inaweza kunyesha ${peakDay} (mm ${peakRain.precipitation_sum.toFixed(0)}).`;
+  }
+
+  // ── Wind — only mention if notable ────────────────────────────────
+  let windNote = '';
+  if (windyDay.wind_max > 35) {
+    windNote = ` Upepo mkali wa hadi ${windyDay.wind_max} km/h unatarajiwa — angalia nyavu za kivuli na miundo inayoweza kupeperushwa.`;
+  } else if (windyDay.wind_max > 22) {
+    windNote = ` Upepo wa wastani wa hadi ${windyDay.wind_max} km/h unatarajiwa, kwa hiyo panga kunyunyizia asubuhi mapema.`;
+  }
+
+  // ── Crop advice — direct and personal ─────────────────────────────
   let cropNote = '';
   if (crop === 'tea' || crop === 'coffee') {
-    cropNote = ` Usiku wa baridi (chini ${tempMin}°C) ni mzuri kwa ubora wa ${sw}.`;
+    if (tempMin != null && tempMin <= 8) {
+      cropNote = ` Usiku huu baridi utasaidia ubora wa ${sw} yako — hii ni hali nzuri kwa ladha.`;
+    } else if (rainyDays >= 3) {
+      cropNote = ` Mvua hii itasaidia ${sw} kukua vizuri, lakini angalia ugonjwa wa ukungu katika hali hii ya unyevu.`;
+    } else {
+      cropNote = ` Hali hii ya hewa inafaa vizuri kwa ${sw} yako — endelea na mpango wako wa kawaida.`;
+    }
   } else if (crop === 'maize' || crop === 'wheat' || crop === 'rice') {
+    if (rainyDays >= 4) {
+      cropNote = ` Mvua hii itafaidisha ${sw} yako sana — hakikisha mifereji iko wazi ili maji yasije yakaa mizizi.`;
+    } else if (rainyDays <= 1 && tempMax != null && tempMax > 28) {
+      cropNote = ` Joto na ukame unaokuja unaweza kusumbua ${sw} — fikiria kumwagilia mara moja au mbili wiki hii.`;
+    } else {
+      cropNote = ` Hali hii inafaa kwa ukuaji wa ${sw} — wiki nzuri ya kufanya kazi shambani.`;
+    }
+  } else if (crop === 'tomatoes' || crop === 'beans') {
+    if (tempMax != null && tempMax > 32) {
+      cropNote = ` Joto hili kali linaweza kuathiri maua ya ${sw} — mwagilia asubuhi mapema na usiku ili kupunguza msongo.`;
+    } else if (rainyDays >= 3) {
+      cropNote = ` Na mvua hii, angalia ${sw} yako kwa ugonjwa wa kuoza — hewa ya unyevu inachangia matatizo hayo.`;
+    } else {
+      cropNote = ` Wiki hii inafaa vizuri kwa ${sw} yako — fuatilia unyevu wa udongo kila siku.`;
+    }
+  } else if (crop === 'potatoes') {
     cropNote = rainyDays >= 3
-      ? ` Unyevu wa kutosha unatarajiwa kusaidia ukuaji wa ${sw} wiki hii.`
-      : ` Angalia unyevu wa udongo — umwagiliaji unaweza kuhitajika kwa ${sw}.`;
-  } else if (crop === 'tomatoes' || crop === 'potatoes') {
-    cropNote = today.temp_max > 32
-      ? ` Joto kali linaweza kudhuru ${sw} — fikiria kivuli cha mchana.`
-      : ` Joto linaonekana kuwa sawa kwa ukuaji wa ${sw} wiki hii.`;
+      ? ` Viazi vinapenda unyevu, lakini maji mengi yanaweza kusababisha kuoza — hakikisha ardhi inapitisha maji vizuri.`
+      : ` Angalia unyevu wa udongo — viazi vinahitaji maji ya kutosha hasa wakati wa ukuaji.`;
+  } else if (crop === 'sugarcane') {
+    cropNote = rainyDays >= 3
+      ? ` Mvua hii itasaidia miwa yako kukua haraka — wakati mzuri wa kuachilia mbolea.`
+      : ` Miwa inahitaji maji mengi — zingatia kumwagilia kama mvua haitoshi wiki hii.`;
+  } else if (crop === 'flowers') {
+    cropNote = windyDay.wind_max > 25
+      ? ` Upepo huu unaweza kudhuru maua — funika au weka nguzo kwenye mimea inayoweza kupinduka.`
+      : ` Hali hii inafaa kwa maua yako — wiki nzuri ya kupanga mazao yako kwa soko.`;
   } else {
-    cropNote = ` Hali kwa ujumla ni ${rainyDays <= 2 ? 'nzuri' : 'yenye msongo'} kwa shughuli za shambani.`;
+    cropNote = rainyDays <= 2
+      ? ` Kwa ujumla ni wiki nzuri ya kufanya kazi nyingi shambani.`
+      : ` Panga kazi zako kuzingatia siku za mvua ili kupoteza wakati kidogo.`;
   }
 
-  return `${name} kwa sasa ina ${condText.toLowerCase()} kwa joto la ${curTemp}°C (juu ${tempMax}°C, chini ${tempMin}°C). ${outlook}${rainNote}${windNote}${cropNote}`;
+  return `${greeting}${addressee}! ${currentDesc} ${weekOutlook}${rainNote}${windNote}${cropNote}`;
 }
 
 // Re-export for backwards compatibility
