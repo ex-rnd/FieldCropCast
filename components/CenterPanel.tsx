@@ -74,6 +74,7 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
   const hourly = (weatherData?.hourly ?? []) as HourlyForecast[];
   const cur    = weatherData?.current ?? {};
 
+  const [cropOpen, setCropOpen]       = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(true);
 
   const risks = daily.length
@@ -109,25 +110,44 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
 
         {/* ── Crop Selector ─────────────────────────────────────── */}
         <section>
-          <SectionHead icon="🌱" title="Select Your Crop" />
-          <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-            {CROPS.map(c => (
-              <button
-                key={c.value}
-                onClick={() => onCropChange(c.value)}
-                className={`crop-btn ${farmState.crop === c.value ? 'selected' : ''}`}
+          <div className="sec-head" style={{ cursor: 'pointer' }} onClick={() => setCropOpen(o => !o)}>
+            <span style={{ fontSize: 14 }}>🌱</span>
+            <span className="sec-head-label">Select Your Crop</span>
+            {farmState.crop && farmState.crop !== 'general' && !cropOpen && (
+              <span
+                className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                style={{ background: 'rgba(74,222,128,.12)', color: 'var(--green)', border: '1px solid rgba(74,222,128,.25)' }}
               >
-                <span className="crop-icon">{c.icon}</span>
-                <span className="crop-label">{c.label}</span>
-              </button>
-            ))}
-          </div>
-          {farmState.crop && farmState.crop !== 'general' && (
-            <p className="text-xs mt-3 px-1 fade-in" style={{ color: 'var(--muted)' }}>
-              Showing risk thresholds and recommendations optimised for <strong style={{ color: 'var(--text2)' }}>
                 {CROPS.find(c => c.value === farmState.crop)?.label ?? farmState.crop}
-              </strong>.
-            </p>
+              </span>
+            )}
+            <div className="sec-head-line" />
+            <span className="text-xs ml-2 shrink-0" style={{ color: 'var(--muted)' }}>
+              {cropOpen ? '▲' : '▼'}
+            </span>
+          </div>
+          {cropOpen && (
+            <div className="fade-in">
+              <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                {CROPS.map(c => (
+                  <button
+                    key={c.value}
+                    onClick={() => onCropChange(c.value)}
+                    className={`crop-btn ${farmState.crop === c.value ? 'selected' : ''}`}
+                  >
+                    <span className="crop-icon">{c.icon}</span>
+                    <span className="crop-label">{c.label}</span>
+                  </button>
+                ))}
+              </div>
+              {farmState.crop && farmState.crop !== 'general' && (
+                <p className="text-xs mt-3 px-1 fade-in" style={{ color: 'var(--muted)' }}>
+                  Showing risk thresholds and recommendations optimised for <strong style={{ color: 'var(--text2)' }}>
+                    {CROPS.find(c => c.value === farmState.crop)?.label ?? farmState.crop}
+                  </strong>.
+                </p>
+              )}
+            </div>
           )}
         </section>
 
