@@ -54,7 +54,7 @@ export function isDaytime(daily: DailyForecast[]): boolean {
 }
 
 const DAY_NAMES = ['Jumapili', 'Jumatatu', 'Jumanne', 'Jumatano', 'Alhamisi', 'Ijumaa', 'Jumamosi'];
-const DAY_SHORT = ['Jpi', 'Jtt', 'Jwn', 'Jto', 'Alh', 'Iju', 'Jms'];
+const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function dayName(dateStr: string, short = true): string {
   const idx = new Date(dateStr + 'T12:00:00').getDay();

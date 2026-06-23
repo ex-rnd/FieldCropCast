@@ -151,83 +151,6 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
           )}
         </section>
 
-        {/* ── Current Conditions ────────────────────────────────── */}
-        <section>
-          <SectionHead icon="🌡" title="Current Conditions" />
-          {weatherData ? (
-            <div className="flex gap-2 fade-in">
-              {[
-                { icon: '🌧', val: daily[0] ? fmtPrecip(daily[0].precipitation_sum, farmState.units) : '—', lbl: 'Rain Today'  },
-                { icon: '🌡', val: curHour.feels_like != null ? fmtTemp(curHour.feels_like, farmState.units) : '—', lbl: 'Feels Like' },
-                { icon: '☀️', val: `${uvIdx} · ${uvLbl}`,                                                    lbl: 'UV Index'   },
-                { icon: '🌬', val: curHour.precipitation_probability != null ? curHour.precipitation_probability + '%' : '—', lbl: 'Rain Chance' },
-                { icon: '💧', val: curHour.humidity != null ? curHour.humidity + '%' : '—',                  lbl: 'Humidity'   },
-                { icon: '💨', val: cur.wind_speed != null ? fmtWind(cur.wind_speed, farmState.units) + (windDir ? ' ' + windDir : '') : '—', lbl: 'Wind' },
-              ].map(m => (
-                <div
-                  key={m.lbl}
-                  className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 rounded-xl text-center"
-                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-                >
-                  <span style={{ fontSize: 16 }}>{m.icon}</span>
-                  <span className="text-xs font-bold leading-tight text-center" style={{ color: 'var(--text)' }}>{m.val}</span>
-                  <span className="text-[9px] uppercase tracking-wider text-center" style={{ color: 'var(--muted)' }}>{m.lbl}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div
-              className="flex flex-col items-center gap-3 py-10 rounded-2xl text-center"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <div className="text-4xl">🌤</div>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text2)' }}>No data loaded</p>
-                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-                  {isFetching ? 'Fetching weather data…' : 'Complete farm setup to see live conditions.'}
-                </p>
-              </div>
-              {isFetching && <div className="spinner" style={{ width: 28, height: 28, borderWidth: 2 }} />}
-            </div>
-          )}
-        </section>
-
-        {/* ── Risk Overview ─────────────────────────────────────── */}
-        {risks && (
-          <section className="fade-in">
-            <SectionHead icon="⚠️" title="7-Day Risk Assessment" />
-            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-              {([
-                { key: 'rain', icon: '🌧', label: 'Rain' },
-                { key: 'wind', icon: '💨', label: 'Wind' },
-                { key: 'temp', icon: '🌡', label: 'Heat / Frost' },
-              ] as const).map(({ key, icon, label }) => {
-                const r = risks[key];
-                return (
-                  <div
-                    key={key}
-                    className="p-4 rounded-2xl"
-                    style={{ background: 'var(--surface)', border: '1px solid var(--border)', backdropFilter: 'blur(12px)' }}
-                  >
-                    <div className="text-2xl mb-2">{icon}</div>
-                    <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>{label}</div>
-                    <div className="text-lg font-black" style={{ color: RISK_COLOR[r.level] }}>
-                      {r.level.charAt(0).toUpperCase() + r.level.slice(1)}
-                    </div>
-                    <div className="h-1.5 rounded-full mt-2 mb-2" style={{ background: 'var(--border)' }}>
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: Math.min(100, r.score) + '%', background: riskBarColor(r.level) }}
-                      />
-                    </div>
-                    <div className="text-[10px] leading-relaxed" style={{ color: 'var(--muted)' }}>{r.detail}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
         {/* ── Field Recommendations ─────────────────────────────── */}
         <section>
           <SectionHead icon="✅" title="Field Recommendations" />
@@ -447,6 +370,83 @@ export default function CenterPanel({ farmState, weatherData, onCropChange, onFa
             </div>
           )}
         </section>
+
+        {/* ── Current Conditions ────────────────────────────────── */}
+        <section>
+          <SectionHead icon="🌡" title="Current Conditions" />
+          {weatherData ? (
+            <div className="flex gap-2 fade-in">
+              {[
+                { icon: '🌧', val: daily[0] ? fmtPrecip(daily[0].precipitation_sum, farmState.units) : '—', lbl: 'Rain Today'  },
+                { icon: '🌡', val: curHour.feels_like != null ? fmtTemp(curHour.feels_like, farmState.units) : '—', lbl: 'Feels Like' },
+                { icon: '☀️', val: `${uvIdx} · ${uvLbl}`,                                                    lbl: 'UV Index'   },
+                { icon: '🌬', val: curHour.precipitation_probability != null ? curHour.precipitation_probability + '%' : '—', lbl: 'Rain Chance' },
+                { icon: '💧', val: curHour.humidity != null ? curHour.humidity + '%' : '—',                  lbl: 'Humidity'   },
+                { icon: '💨', val: cur.wind_speed != null ? fmtWind(cur.wind_speed, farmState.units) + (windDir ? ' ' + windDir : '') : '—', lbl: 'Wind' },
+              ].map(m => (
+                <div
+                  key={m.lbl}
+                  className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 rounded-xl text-center"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                >
+                  <span style={{ fontSize: 16 }}>{m.icon}</span>
+                  <span className="text-xs font-bold leading-tight text-center" style={{ color: 'var(--text)' }}>{m.val}</span>
+                  <span className="text-[9px] uppercase tracking-wider text-center" style={{ color: 'var(--muted)' }}>{m.lbl}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              className="flex flex-col items-center gap-3 py-10 rounded-2xl text-center"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <div className="text-4xl">🌤</div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text2)' }}>No data loaded</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                  {isFetching ? 'Fetching weather data…' : 'Complete farm setup to see live conditions.'}
+                </p>
+              </div>
+              {isFetching && <div className="spinner" style={{ width: 28, height: 28, borderWidth: 2 }} />}
+            </div>
+          )}
+        </section>
+
+        {/* ── Risk Overview ─────────────────────────────────────── */}
+        {risks && (
+          <section className="fade-in">
+            <SectionHead icon="⚠️" title="7-Day Risk Assessment" />
+            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+              {([
+                { key: 'rain', icon: '🌧', label: 'Rain' },
+                { key: 'wind', icon: '💨', label: 'Wind' },
+                { key: 'temp', icon: '🌡', label: 'Heat / Frost' },
+              ] as const).map(({ key, icon, label }) => {
+                const r = risks[key];
+                return (
+                  <div
+                    key={key}
+                    className="p-4 rounded-2xl"
+                    style={{ background: 'var(--surface)', border: '1px solid var(--border)', backdropFilter: 'blur(12px)' }}
+                  >
+                    <div className="text-2xl mb-2">{icon}</div>
+                    <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--muted)' }}>{label}</div>
+                    <div className="text-lg font-black" style={{ color: RISK_COLOR[r.level] }}>
+                      {r.level.charAt(0).toUpperCase() + r.level.slice(1)}
+                    </div>
+                    <div className="h-1.5 rounded-full mt-2 mb-2" style={{ background: 'var(--border)' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: Math.min(100, r.score) + '%', background: riskBarColor(r.level) }}
+                      />
+                    </div>
+                    <div className="text-[10px] leading-relaxed" style={{ color: 'var(--muted)' }}>{r.detail}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
       </div>
     </div>

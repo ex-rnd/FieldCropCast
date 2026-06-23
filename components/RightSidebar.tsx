@@ -563,7 +563,7 @@ export default function RightSidebar({ weatherData, farmState, alerts, onDismiss
                     className="text-xs font-bold w-9 shrink-0"
                     style={{ color: isToday ? 'var(--green)' : 'var(--text2)' }}
                   >
-                    {isToday ? 'Leo' : dayName(day.date)}
+                    {isToday ? 'Today' : dayName(day.date)}
                   </span>
                   <span className="text-base shrink-0">{wmoIcon(day.condition_code, true)}</span>
                   <div className="flex-1 min-w-0" />
