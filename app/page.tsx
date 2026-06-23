@@ -54,7 +54,7 @@ export default function Page() {
       );
     }
 
-    fetch('/frontend/ui/config').then(r => r.json()).then(setUiConfig).catch(() => {});
+    fetch('/backend/api/config').then(r => r.json()).then(setUiConfig).catch(() => {});
   }, []);
 
   // ── Theme ─────────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export default function Page() {
   // ── Usage ─────────────────────────────────────────────────────────────
   const loadUsage = useCallback(async () => {
     try {
-      const res = await fetch('/frontend/ui/usage');
+      const res = await fetch('/backend/api/usage');
       if (!res.ok) return;
       setUsage(await res.json());
     } catch {}
@@ -88,7 +88,7 @@ export default function Page() {
     else         setRefreshing(true);
 
     try {
-      const url  = `/frontend/ui/weather?lat=${state.lat}&lon=${state.lon}&days=7&units=${state.units}&ai=true&lang=sw`;
+      const url  = `/backend/api/weather?lat=${state.lat}&lon=${state.lon}&days=7&units=${state.units}&ai=true&lang=sw`;
       const res  = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -120,7 +120,7 @@ export default function Page() {
   useEffect(() => {
     const poll = async () => {
       try {
-        const res = await fetch('/frontend/ui/alerts');
+        const res = await fetch('/backend/api/alerts');
         if (!res.ok) return;
         const data = await res.json();
         setAlerts(data.alerts ?? []);
@@ -134,12 +134,12 @@ export default function Page() {
   // ── Alert dismiss ─────────────────────────────────────────────────────
   const handleDismissAlert = useCallback(async (id: string) => {
     setAlerts(prev => prev.filter(a => a.id !== id));
-    try { await fetch(`/frontend/ui/alerts?id=${id}`, { method: 'DELETE' }); } catch {}
+    try { await fetch(`/backend/api/alerts?id=${id}`, { method: 'DELETE' }); } catch {}
   }, []);
 
   const handleDismissAll = useCallback(async () => {
     setAlerts([]);
-    try { await fetch('/frontend/ui/alerts', { method: 'DELETE' }); } catch {}
+    try { await fetch('/backend/api/alerts', { method: 'DELETE' }); } catch {}
   }, []);
 
   // ── Analyze ───────────────────────────────────────────────────────────

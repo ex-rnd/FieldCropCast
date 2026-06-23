@@ -63,7 +63,7 @@ export default function SetupForm({
     (typeof window !== 'undefined'
       ? window.location.origin
       : (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000')
-    ) + '/frontend/ui/alerts/webhook';
+    ) + '/backend/api/alerts/webhook';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(webhookUrl).then(() => {

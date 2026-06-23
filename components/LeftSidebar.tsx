@@ -175,7 +175,7 @@ function SetupForm({ farmState, onChange, onAnalyze, isFetching, units, onCancel
           style={{ color: 'var(--sky)', fontFamily: 'monospace' }}
           title="Your WeatherAI webhook endpoint"
         >
-          {typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/frontend/ui/alerts/webhook
+          {typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/backend/api/alerts/webhook
         </code>
         <p className="text-[9px] mt-1" style={{ color: 'var(--muted)' }}>
           Paste into WeatherAI → Webhooks &amp; Alerts
