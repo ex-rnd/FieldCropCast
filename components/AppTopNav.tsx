@@ -84,18 +84,38 @@ export default function AppTopNav({
 
       {/* Center: farm identity + status */}
       <div className="flex-1 flex items-center justify-center gap-3 overflow-hidden min-w-0">
-        {farmState.name && (
-          <span className="text-sm font-bold truncate" style={{ color: 'var(--text)', maxWidth: 200 }}>
-            {farmState.name}
-          </span>
-        )}
-        {farmState.county && farmState.name && (
-          <span style={{ color: 'var(--border)', flexShrink: 0 }}>·</span>
-        )}
-        {farmState.county && (
-          <span className="text-xs truncate shrink-0" style={{ color: 'var(--muted)' }}>
-            {farmState.county}
-          </span>
+        {(farmState.name || farmState.county) && (
+          <div
+            className="flex items-center gap-0 rounded-lg overflow-hidden shrink-0"
+            style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}
+          >
+            {farmState.name && (
+              <span
+                className="text-xs font-bold px-2.5 py-1"
+                style={{ color: 'var(--text)' }}
+              >
+                {farmState.name}
+              </span>
+            )}
+            {farmState.name && farmState.county && (
+              <span
+                className="self-stretch w-px"
+                style={{ background: 'var(--border)' }}
+              />
+            )}
+            {farmState.county && (
+              <span
+                className="flex items-center gap-1 px-2.5 py-1 text-xs"
+                style={{ color: 'var(--muted)' }}
+              >
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                {farmState.county}
+              </span>
+            )}
+          </div>
         )}
 
         {weatherData && pill && (
