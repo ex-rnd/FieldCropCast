@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useUser } from '@clerk/nextjs';
 import type { WeatherData, FarmState, UsageData, WeatherAlert } from '@/lib/types';
+import { loadFarmFromFirebase, saveFarmToFirebase } from '@/lib/farm-db';
 import AppTopNav    from '@/components/AppTopNav';
 import LeftSidebar  from '@/components/LeftSidebar';
 import CenterPanel  from '@/components/CenterPanel';
@@ -21,6 +23,9 @@ export interface UIConfig {
 }
 
 export default function Page() {
+  const { user } = useUser();
+  const userEmail = user?.primaryEmailAddress?.emailAddress ?? null;
+
   const [theme, setTheme]           = useState<'dark' | 'light'>('dark');
   const [farmState, setFarmState]   = useState<FarmState>(DEFAULT_FARM);
   const [weatherData, setWeather]   = useState<WeatherData | null>(null);
@@ -47,6 +52,16 @@ export default function Page() {
       try { setFarmState(f => ({ ...DEFAULT_FARM, ...f, ...JSON.parse(savedFarm) })); } catch {}
     }
 
+    if (userEmail) {
+      loadFarmFromFirebase(userEmail).then(remote => {
+        if (remote) {
+          const merged = { ...DEFAULT_FARM, ...remote };
+          setFarmState(merged);
+          localStorage.setItem('fc-farm', JSON.stringify(merged));
+        }
+      });
+    }
+
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         pos => setFarmState(p => ({
@@ -60,7 +75,7 @@ export default function Page() {
     }
 
     fetch('/backend/api/config').then(r => r.json()).then(setUiConfig).catch(() => {});
-  }, []);
+  }, [userEmail]); // re-run when Clerk resolves the user
 
   // ── Theme ─────────────────────────────────────────────────────────────
   const toggleTheme = useCallback(() => {
@@ -155,8 +170,9 @@ export default function Page() {
     if (isNaN(lon) || lon < -180 || lon > 180)  { showError('Enter a valid longitude (−180 to 180).'); return; }
     setFarmState(state);
     localStorage.setItem('fc-farm', JSON.stringify(state));
+    if (userEmail) saveFarmToFirebase(userEmail, state).catch(() => {});
     fetchWeather(state);
-  }, [fetchWeather, showError]);
+  }, [fetchWeather, showError, userEmail]);
 
   // ── Manual refresh ────────────────────────────────────────────────────
   const handleRefresh = useCallback(() => {
@@ -175,18 +191,20 @@ export default function Page() {
     setFarmState(s => {
       const next = { ...s, crop, cropVariety: undefined };
       localStorage.setItem('fc-farm', JSON.stringify(next));
+      if (userEmail) saveFarmToFirebase(userEmail, next).catch(() => {});
       return next;
     });
-  }, []);
+  }, [userEmail]);
 
   // ── Crop details change ───────────────────────────────────────────────
   const handleFarmStateChange = useCallback((updates: Partial<FarmState>) => {
     setFarmState(s => {
       const next = { ...s, ...updates };
       localStorage.setItem('fc-farm', JSON.stringify(next));
+      if (userEmail) saveFarmToFirebase(userEmail, next).catch(() => {});
       return next;
     });
-  }, []);
+  }, [userEmail]);
 
   // ── Render ────────────────────────────────────────────────────────────
   return (

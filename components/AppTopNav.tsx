@@ -1,5 +1,6 @@
 'use client';
 
+import { useClerk, useUser } from '@clerk/nextjs';
 import type { WeatherData, FarmState, DailyForecast } from '@/lib/types';
 import { computeRisks, wmoIcon, fmtTemp, isDaytime } from '@/lib/weather-utils';
 
@@ -24,6 +25,14 @@ const RISK_PILL: Record<string, { cls: string; label: string }> = {
 export default function AppTopNav({
   theme, onThemeToggle, farmState, weatherData, isRefreshing, isFetching, onRefresh, onResetCache,
 }: Props) {
+  const { signOut } = useClerk();
+  const { user }    = useUser();
+
+  const handleSignOut = () => {
+    localStorage.removeItem('fc-farm');
+    localStorage.removeItem('fc-theme');
+    signOut({ redirectUrl: '/sign-in' });
+  };
   const daily    = (weatherData?.daily ?? []) as DailyForecast[];
   const cur      = weatherData?.current ?? {};
   const isDay    = isDaytime(daily);
@@ -162,6 +171,20 @@ export default function AppTopNav({
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           <span style={{ fontSize: 14 }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
+        </button>
+
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all hover:opacity-80"
+          style={{ background: 'rgba(239,68,68,.10)', border: '1px solid rgba(239,68,68,.25)', color: '#ef4444' }}
+          title={`Sign out${user?.primaryEmailAddress?.emailAddress ? ' · ' + user.primaryEmailAddress.emailAddress : ''}`}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Sign Out
         </button>
       </div>
     </header>
