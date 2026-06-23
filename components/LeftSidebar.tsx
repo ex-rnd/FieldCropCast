@@ -407,16 +407,19 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
       {/* ── AI Quota ───────────────────────────────────────────────── */}
       {usageData && (usageData.limits?.aiRequests != null || usageData.limits?.requests != null) && (() => {
         const aiLimit     = usageData.limits?.aiRequests ?? 0;
-        const aiRemaining = usageData.remaining?.aiRequests ?? (aiLimit - (usageData.period?.aiRequestCount ?? 0));
-        const aiUsed      = aiLimit - aiRemaining;
-        const aiPct       = aiLimit > 0 ? Math.round((aiRemaining / aiLimit) * 100) : 0;
+        const aiUsed      = usageData.period?.aiRequestCount
+          ?? Math.max(0, aiLimit - (usageData.remaining?.aiRequests ?? aiLimit));
+        const aiRemaining = Math.max(0, usageData.remaining?.aiRequests ?? (aiLimit - aiUsed));
+        const aiPct       = aiLimit > 0 ? Math.min(100, Math.round((aiRemaining / aiLimit) * 100)) : 0;
 
         const reqLimit     = usageData.limits?.requests ?? 0;
-        const reqRemaining = usageData.remaining?.requests ?? (reqLimit - (usageData.period?.requestCount ?? 0));
-        const reqPct       = reqLimit > 0 ? Math.round((reqRemaining / reqLimit) * 100) : 0;
+        const reqUsed      = usageData.period?.requestCount
+          ?? Math.max(0, reqLimit - (usageData.remaining?.requests ?? reqLimit));
+        const reqRemaining = Math.max(0, usageData.remaining?.requests ?? (reqLimit - reqUsed));
+        const reqPct       = reqLimit > 0 ? Math.min(100, Math.round((reqRemaining / reqLimit) * 100)) : 0;
 
         const periodEnd = usageData.period?.end
-          ? new Date(usageData.period.end).toLocaleDateString('sw-KE', { day: 'numeric', month: 'short', year: 'numeric' })
+          ? new Date(usageData.period.end).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })
           : null;
 
         const barColor = (pct: number) =>
@@ -475,6 +478,10 @@ function WeatherSummary({ farmState, weatherData, lastUpdated, autoRefreshMs, is
                     className="h-full rounded-full transition-all duration-500"
                     style={{ width: reqPct + '%', background: barColor(reqPct) }}
                   />
+                </div>
+                <div className="flex justify-between mt-0.5">
+                  <span className="text-[9px]" style={{ color: 'var(--muted)' }}>{reqUsed.toLocaleString()} used</span>
+                  <span className="text-[9px]" style={{ color: 'var(--muted)' }}>{reqPct}% remaining</span>
                 </div>
               </div>
             )}
