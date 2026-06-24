@@ -16,7 +16,7 @@ A full‑stack Next.js application that helps Kenyan farmers make smarter crop d
 
 <p align="center"><strong>Firebase Database</strong></p>
 <div align="center">
-<video src="https://github.com/user-attachments/assets/ba78a680-4bdd-434d-a897-31d3daed81d2" width="500" controls></video>
+<video src="https://github.com/user-attachments/assets/1bddd0ab-3a58-4c90-9403-e3569a8b699c" width="500" controls></video>
 </div>
 
 <p align="center"> </p>
