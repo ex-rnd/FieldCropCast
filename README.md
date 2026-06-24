@@ -14,17 +14,15 @@ A full‑stack Next.js application that helps Kenyan farmers make smarter crop d
 <video src="https://github.com/user-attachments/assets/2ac79454-19d2-4385-801d-2077503097ff" width="500" controls></video>
 </div>
 
-<p align="center"><strong>Backend</strong></p>
+<p align="center"><strong>Firebase Database</strong></p>
 <div align="center">
-<video src="https://github.com/user-attachments/assets/7bf7e051-0666-4cd9-91e3-46417f2c49e8" width="500" controls></video>
+<video src="https://github.com/user-attachments/assets/ba78a680-4bdd-434d-a897-31d3daed81d2" width="500" controls></video>
 </div>
 
 <p align="center"> </p>
 <p align="center"> 🌾 Built for Kenyan farmers. Powered by WeatherAI. </p>
 <br/>
 <p align="center"> </p>
-
-
 
 
 ## 📹 Demo
