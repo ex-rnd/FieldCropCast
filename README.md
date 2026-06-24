@@ -113,6 +113,52 @@ npm start
 7. Upgrade plan via M‑Pesa STK Push
 
 
+## 🪜 Project Structure
+```
+FieldCropCast/
+├── app/
+│   ├── backend/api/
+│   │   ├── alerts/          # Weather alert CRUD + webhook receiver
+│   │   ├── config/          # Static UI config
+│   │   ├── geocode/         # Reverse geocoding proxy
+│   │   ├── mpesa/           # STK Push, query, callback
+│   │   ├── trees/           # Analyze, quota, history
+│   │   ├── usage/           # WeatherAI usage stats
+│   │   ├── weather/         # Main weather proxy
+│   │   └── weather-geo/     # Weather by place name
+│   ├── sign-in/[[...sign-in]]/
+│   ├── sign-up/[[...sign-up]]/
+│   ├── globals.css          # CSS custom properties, Tailwind base
+│   ├── icon.svg             # App favicon
+│   ├── layout.tsx           # Root layout (ClerkProvider, metadata)
+│   └── page.tsx             # Root page — state orchestration
+│
+├── components/
+│   ├── AppTopNav.tsx        # Navigation bar, Plans modal, Payment trigger
+│   ├── CenterPanel.tsx      # Crop selector, recommendations, conditions, risks
+│   ├── LeftSidebar.tsx      # Farm setup form, AI usage quota
+│   ├── PaymentModal.tsx     # M-Pesa STK Push payment flow
+│   └── RightSidebar.tsx     # AI summary, field photos, forecast, alerts
+│
+├── lib/
+│   ├── alerts-store.ts      # In-memory alert store (server-side)
+│   ├── api-error.ts         # Upstream error classifier (QUOTA_EXCEEDED etc.)
+│   ├── farm-db.ts           # Firebase Firestore read/write helpers
+│   ├── firebase.ts          # Firebase app initialisation
+│   ├── mpesa.ts             # Daraja OAuth, timestamp, password, phone formatter
+│   ├── types.ts             # Shared TypeScript interfaces
+│   └── weather-utils.ts     # Risk scoring, recommendations, crop stages, formatters
+│
+├── public/
+│   ├── mpesa-loading.gif    # Loading animation for payment modal
+│   └── mpesa-logo.png       # M-Pesa logo for payment modal
+│
+├── middleware.ts            # Clerk route protection
+├── .env                     # Environment variables (never committed)
+└── package.json
+```
+
+
 ## 📐 Application Architecture
 ```
              ┌─────────────────────────┐
