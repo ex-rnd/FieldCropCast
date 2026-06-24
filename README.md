@@ -5,7 +5,22 @@ A full‑stack Next.js application that helps Kenyan farmers make smarter crop d
 
 https://github.com/user-attachments/assets/9d1655c0-2943-4ef5-b7f1-169190bd67ca
 
-🌾 Built for Kenyan farmers. Powered by WeatherAI.
+<p align="center"><strong>Frontend</strong></p>
+<div align="center">
+<video src="https://github.com/user-attachments/assets/cab6d78b-5201-4315-b800-72bf583e17fd" width="500" controls></video>
+</div>
+
+<p align="center"><strong>Backend</strong></p>
+<div align="center">
+<video src="https://github.com/user-attachments/assets/7bf7e051-0666-4cd9-91e3-46417f2c49e8" width="500" controls></video>
+</div>
+
+<p align="center"> </p>
+<p align="center"> 🌾 Built for Kenyan farmers. Powered by WeatherAI. </p>
+<br/>
+<p align="center"> </p>
+
+
 
 
 ## 📹 Demo
@@ -20,16 +35,17 @@ First, see it in action:
        
 ## 🔍 Project Overview
 
-- 1. Problem
+### 1. Problem
 Kenyan farmers often rely on generic forecasts that don’t match their crop or location. FieldCropCast bridges that gap with actionable, crop‑specific intelligence.
 
-- 2. Key Components
+### 2. Key Components
 - `Next.js 16` frontend with Tailwind CSS
 - `Clerk authentication` for secure sign‑in/out
 - `Firebase Firestore` for farm profile persistence
 - `WeatherAI API` for forecasts, AI summaries, and tree analysis
 - `M‑Pesa Daraja API` for subscription payments (STK Push)
 - `Self hosted Coolify deployment` with Nixpacks build pack - (Webhook - Auto - CI/CD)
+
 
 ## 🛠️ Getting Started
 1. Clone the repo
