@@ -34,6 +34,19 @@ First, see it in action:
 5. Upload a field photo to run satellite tree analysis
 6. Upgrade to Pro or Scale via M‑Pesa STK Push
 
+
+## ⭐ Outstanding Features
+The outstanding features for this app, include:
+- AI‑generated weather summaries in Kiswahili + English
+- Crop‑specific risk scoring (rain, wind, heat/frost) with urgency levels
+- Satellite‑grade tree analysis from field photos
+- Growth stage estimation based on planting date
+- Real‑time weather alerts via webhook
+- M‑Pesa STK Push subscription flow (Pro + Scale plans)
+- Instant boot using localStorage + Firestore sync
+- 17 supported crops with dynamic recommendations
+- Fully client‑rendered Next.js app with server‑side API proxying
+
        
 ## 🔍 Project Overview
 
@@ -134,6 +147,18 @@ npm start
 - AI summaries available in Kiswahili (default) and English
 - Tree analysis returns canopy coverage, density, species, and health breakdown
 - M‑Pesa STK Push flow confirms subscription upgrades in real time
+
+
+## 🔮 Future Enhancements
+Future enhancements include but are not limited to:
+- SMS alerts (Africa’s Talking)
+- Offline‑first PWA mode
+- County‑level weather heatmaps
+- Batch tree analysis
+- Historical weather trends
+- Multi‑farm support
+- AI crop diagnosis
+
 
 ## 🤝 Contributing
 - Fork the repository
