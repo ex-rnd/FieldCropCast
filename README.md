@@ -27,12 +27,12 @@ A full‑stack Next.js application that helps Kenyan farmers make smarter crop d
 
 ## 📹 Demo
 First, see it in action:
-- 1. Sign in via Clerk
-- 2. Enter your farm name and select a Kenya county (lat/lon auto‑populates)
-- 3. Click Analyze Farm — weather, risk scores, and AI summary load instantly
-- 4. Select your crop to get tailored field recommendations
-- 5. Upload a field photo to run satellite tree analysis
-- 6. Upgrade to Pro or Scale via M‑Pesa STK Push
+1. Sign in via Clerk
+2. Enter your farm name and select a Kenya county (lat/lon auto‑populates)
+3. Click Analyze Farm — weather, risk scores, and AI summary load instantly
+4. Select your crop to get tailored field recommendations
+5. Upload a field photo to run satellite tree analysis
+6. Upgrade to Pro or Scale via M‑Pesa STK Push
 
        
 ## 🔍 Project Overview
