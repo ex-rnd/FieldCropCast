@@ -1,11 +1,12 @@
-# 🌿 FieldCropCast — Farmer Weather Intelligence Dashboard
+# 🌿 FieldCropCast - Farmer Weather Intelligence
 A full‑stack Next.js application that helps Kenyan farmers make smarter crop decisions 🌾, powered by WeatherAI APIs, Firebase Firestore, Clerk authentication, and M‑Pesa STK Push for subscriptions.
+
 
 ## ✳️ Visual Overview 
 
-<p align="center"><strong>Frontend</strong></p>
+<p align="center"><strong>Demo</strong></p>
 <div align="center">
-<video src="https://github.com/user-attachments/assets/9d1655c0-2943-4ef5-b7f1-169190bd67ca" width="500" controls></video>
+<video src="https://github.com/user-attachments/assets/1cbc1b12-124c-4b8b-a516-3c4ec5bfebac" width="500" controls></video>
 </div>
 
 <p align="center"><strong>Frontend</strong></p>
