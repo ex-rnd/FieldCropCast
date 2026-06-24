@@ -3,7 +3,10 @@ A full‑stack Next.js application that helps Kenyan farmers make smarter crop d
 
 ## ✳️ Visual Overview 
 
-https://github.com/user-attachments/assets/9d1655c0-2943-4ef5-b7f1-169190bd67ca
+<p align="center"><strong>Frontend</strong></p>
+<div align="center">
+<video src="https://github.com/user-attachments/assets/9d1655c0-2943-4ef5-b7f1-169190bd67ca" width="500" controls></video>
+</div>
 
 <p align="center"><strong>Frontend</strong></p>
 <div align="center">
