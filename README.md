@@ -88,16 +88,16 @@ npm run dev
 
 
 ## ▶️ Usage
-- 1. Start the application:
+1. Start the application:
 ```
 npm start
 ```
-- 2. Sign in via Clerk
-- 3. Set up your farm profile (name, county, crop, optional details)
-- 4. Click Analyze Farm to fetch live weather and AI summary
-- 5. View crop‑specific risk scores (rain, wind, heat/frost)
-- 6. Upload a photo for tree health analysis
-- 7. Upgrade plan via M‑Pesa STK Push
+2. Sign in via Clerk
+3. Set up your farm profile (name, county, crop, optional details)
+4. Click Analyze Farm to fetch live weather and AI summary
+5. View crop‑specific risk scores (rain, wind, heat/frost)
+6. Upload a photo for tree health analysis
+7. Upgrade plan via M‑Pesa STK Push
 
 
 ## 📐 Application Architecture
