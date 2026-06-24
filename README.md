@@ -115,29 +115,31 @@ npm start
 
 ## 📐 Application Architecture
 ```
-             ┌─────────────────────┐
-             │   Client (Browser)  │
-             └──────────┬──────────┘
-                        │
-                        ▼
-             ┌─────────────────────┐
-             │   Next.js App Router│
-             └──────────┬──────────┘
-                        │ Proxy API calls
-                        ▼
-             ┌─────────────────────┐
-             │ WeatherAI API       │
-             │ - Forecasts         │
-             │ - AI Summaries      │
-             │ - Tree Analysis     │
-             └─────────────────────┘
-                        │
-                        ▼
-             ┌─────────────────────┐
-             │ M-Pesa Daraja API   │
-             │ - STK Push          │
-             │ - Query & Callback  │
-             └─────────────────────┘
+             ┌─────────────────────────┐
+             │     Client (Browser)    │
+             │  - Farm Setup UI        │
+             │  - Crop Selector        │
+             │  - Tree Analysis Upload │
+             └───────────┬────────────┘
+                         │
+                         ▼
+             ┌─────────────────────────┐
+             │   Next.js App Router    │
+             │ /app/backend/api/*      │
+             │  - Weather Proxy        │
+             │  - Tree Analysis Proxy  │
+             │  - Alerts Webhook       │
+             │  - M-Pesa STK Push      │
+             └───────────┬────────────┘
+                         │
+         ┌───────────────┼────────────────┐
+         ▼                               ▼
+┌──────────────────────┐       ┌──────────────────────┐
+│   WeatherAI API       │       │  M-Pesa Daraja API   │
+│ - Forecasts           │       │ - STK Push           │
+│ - AI Summaries        │       │ - Query              │
+│ - Tree Analysis       │       │ - Callback           │
+└──────────────────────┘       └──────────────────────┘
 ```
 
 
